@@ -1,0 +1,31 @@
+# Headers for archive files to prevent transformations
+/archive/*
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+# Binary file types
+/*.wasm
+  Content-Type: application/wasm
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.arcd
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.arci
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.projectc
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.dmanifest
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.der
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000, immutable
+
