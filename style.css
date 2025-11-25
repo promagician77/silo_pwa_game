@@ -586,8 +586,8 @@ input:-ms-input-placeholder {
   #canvas-container {
     max-width: 100vw;
     max-height: 100vh;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
   }
 }
 
@@ -672,11 +672,11 @@ textarea {
   backface-visibility: hidden;
 }
 
-.buttons-background {
+/* .buttons-background {
   background-color: #ffffff;
   width: 100%;
   height: 42px;
-}
+} */
 
 .canvas-app-container {
   background: #ffffff;

@@ -170,11 +170,11 @@
         // }
         
         // Set internal canvas resolution (game engine uses this)
-        var dpi = window.devicePixelRatio || 1;
-        game_canvas.width = Math.floor(nativeWidth * dpi);
-        game_canvas.height = Math.floor(nativeHeight * dpi);
+        // Always maintain native resolution 1280x720, don't use devicePixelRatio
+        game_canvas.width = nativeWidth;
+        game_canvas.height = nativeHeight;
         
-        // Set display size (how it appears on screen)
+        // Set display size (how it appears on screen) - responsive to viewport
         game_canvas.style.width = displayWidth + "px";
         game_canvas.style.height = displayHeight + "px";
         
