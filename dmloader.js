@@ -92,8 +92,6 @@ var CUSTOM_PARAMETERS = {
         var targetRatio = width / height;
         var actualRatio = innerWidth / innerHeight;
     
-    
-    
         //Fit
         if (actualRatio > targetRatio) {
             width = innerHeight * targetRatio;
@@ -108,13 +106,10 @@ var CUSTOM_PARAMETERS = {
             app_container.style.marginTop = ((innerHeight - height) / 2) + "px";
         }
     
-    
-        var dpi = 1;
-    
         app_container.style.width = width + "px";
         app_container.style.height = height + buttonHeight + "px";
-        game_canvas.width = Math.floor(width * dpi);
-        game_canvas.height = Math.floor(height * dpi);
+        game_canvas.width = Math.floor(width);
+        game_canvas.height = Math.floor(height);
     }
 };
 
