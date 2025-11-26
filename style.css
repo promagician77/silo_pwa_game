@@ -773,3 +773,101 @@ button,
   -webkit-will-change: transform, opacity;
 }
 
+/* ====== LANDSCAPE ORIENTATION ENFORCEMENT ====== */
+.orientation-lock-message {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  color: #fff;
+  font-family: "Kalam", cursive;
+  text-align: center;
+  padding: 20px;
+  box-sizing: border-box;
+  /* Safari rendering optimization */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+.orientation-lock-message.show {
+  display: flex;
+}
+
+.orientation-lock-icon {
+  font-size: 80px;
+  margin-bottom: 30px;
+  animation: rotate 2s ease-in-out infinite;
+  -webkit-animation: rotate 2s ease-in-out infinite;
+}
+
+@keyframes rotate {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-90deg);
+  }
+  75% {
+    transform: rotate(90deg);
+  }
+}
+
+@-webkit-keyframes rotate {
+  0%, 100% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  25% {
+    -webkit-transform: rotate(-90deg);
+    transform: rotate(-90deg);
+  }
+  75% {
+    -webkit-transform: rotate(90deg);
+    transform: rotate(90deg);
+  }
+}
+
+.orientation-lock-message h2 {
+  font-family: "Fredoka One", cursive;
+  font-size: clamp(28px, 5vw, 40px);
+  margin: 0 0 20px 0;
+  color: #ff6b35;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.orientation-lock-message p {
+  font-size: clamp(18px, 3vw, 24px);
+  margin: 0;
+  line-height: 1.6;
+  color: #ddd;
+}
+
+/* Hide main content when in portrait mode */
+@media (orientation: portrait) {
+  #app-container,
+  .overlay,
+  .landing-background {
+    display: none !important;
+  }
+  
+  .orientation-lock-message {
+    display: flex !important;
+  }
+}
+
+/* Show main content when in landscape mode */
+@media (orientation: landscape) {
+  .orientation-lock-message {
+    display: none !important;
+  }
+}
+

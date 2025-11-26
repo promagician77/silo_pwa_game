@@ -30,6 +30,13 @@
   </head>
 
   <body>
+    <!-- Orientation lock message for portrait mode -->
+    <div id="orientation-lock-message" class="orientation-lock-message">
+      <div class="orientation-lock-icon">📱</div>
+      <h2>Please Rotate Your Device</h2>
+      <p>This game requires landscape orientation.<br>Please rotate your device to continue playing.</p>
+    </div>
+
     <div id="app-container" class="canvas-app-container">
       <div id="running-from-file-warning" style="display: none; margin: 3em">
         <h1>Running from local file ⚠️</h1>
@@ -230,6 +237,39 @@
     </script>
 
     <script>
+      // Landscape orientation enforcement
+      function checkOrientation() {
+        var orientationMessage = document.getElementById('orientation-lock-message');
+        var isPortrait = window.innerHeight > window.innerWidth;
+        
+        if (orientationMessage) {
+          if (isPortrait) {
+            orientationMessage.classList.add('show');
+          } else {
+            orientationMessage.classList.remove('show');
+          }
+        }
+      }
+      
+      // Check orientation on load
+      window.addEventListener('load', checkOrientation);
+      
+      // Check orientation on resize (handles device rotation)
+      window.addEventListener('resize', checkOrientation);
+      
+      // Check orientation on orientationchange (more reliable for mobile)
+      window.addEventListener('orientationchange', function() {
+        // Small delay to ensure dimensions are updated
+        setTimeout(checkOrientation, 100);
+      });
+      
+      // Initial check
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', checkOrientation);
+      } else {
+        checkOrientation();
+      }
+      
       // Safari compatibility check
       var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) || 
                      /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -255,123 +295,6 @@
       } else if (isSafari) {
         console.warn('[Safari] Service Workers not supported in this Safari version');
       }
-    </script>
-
-    <script>
-      // ===============================================================
-      // Orientation Lock and Touch-Scaling Prevention
-      // ===============================================================
-      
-      (function() {
-        // Try to lock orientation using Screen Orientation API (if available)
-        // Note: iOS Safari has limited support, but this helps on Android/Chrome
-        if (screen.orientation && screen.orientation.lock) {
-          screen.orientation.lock('landscape').catch(function(err) {
-            console.log('[Orientation] Could not lock orientation:', err);
-            // This is expected on iOS Safari - it doesn't support orientation lock
-          });
-        } else if (screen.lockOrientation) {
-          // Legacy API
-          screen.lockOrientation('landscape');
-        } else if (screen.mozLockOrientation) {
-          // Firefox
-          screen.mozLockOrientation('landscape');
-        } else if (screen.msLockOrientation) {
-          // IE/Edge
-          screen.msLockOrientation('landscape');
-        }
-        
-        // ===============================================================
-        // Prevent Pinch-to-Zoom and Touch Scaling
-        // ===============================================================
-        
-        var lastTouchEnd = 0;
-        var preventZoom = function(e) {
-          var now = Date.now();
-          // Prevent double-tap zoom
-          if (now - lastTouchEnd <= 300) {
-            e.preventDefault();
-          }
-          lastTouchEnd = now;
-        };
-        
-        // Prevent pinch-to-zoom with multiple touches
-        document.addEventListener('touchstart', function(e) {
-          if (e.touches.length > 1) {
-            e.preventDefault();
-          }
-        }, { passive: false });
-        
-        document.addEventListener('touchend', preventZoom, { passive: false });
-        document.addEventListener('touchcancel', preventZoom, { passive: false });
-        
-        // Prevent double-tap zoom
-        document.addEventListener('touchend', function(e) {
-          var now = Date.now();
-          if (now - lastTouchEnd <= 300) {
-            e.preventDefault();
-          }
-          lastTouchEnd = now;
-        }, { passive: false });
-        
-        // Prevent gesture events (pinch, rotate, etc.)
-        document.addEventListener('gesturestart', function(e) {
-          e.preventDefault();
-        });
-        
-        document.addEventListener('gesturechange', function(e) {
-          e.preventDefault();
-        });
-        
-        document.addEventListener('gestureend', function(e) {
-          e.preventDefault();
-        });
-        
-        // Prevent wheel zoom (Ctrl/Cmd + scroll)
-        document.addEventListener('wheel', function(e) {
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-          }
-        }, { passive: false });
-        
-        // Prevent keyboard zoom (Ctrl/Cmd + +/-)
-        document.addEventListener('keydown', function(e) {
-          if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=')) {
-            e.preventDefault();
-          }
-        });
-        
-        // Additional iOS Safari specific fixes
-        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        
-        if (isIOS) {
-          // Prevent iOS Safari bounce/scroll on body
-          document.body.addEventListener('touchmove', function(e) {
-            // Allow touchmove on scrollable elements (like inputs)
-            var target = e.target;
-            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || 
-                target.isContentEditable || target.closest('.panel')) {
-              return;
-            }
-            // Prevent default for other elements
-            e.preventDefault();
-          }, { passive: false });
-          
-          // Fix iOS viewport height issue
-          function setViewportHeight() {
-            var vh = window.innerHeight * 0.01;
-            document.documentElement.style.setProperty('--vh', vh + 'px');
-          }
-          
-          setViewportHeight();
-          window.addEventListener('resize', setViewportHeight);
-          window.addEventListener('orientationchange', function() {
-            setTimeout(setViewportHeight, 100);
-          });
-        }
-        
-        console.log('[Orientation] Orientation lock and touch-scaling prevention initialized');
-      })();
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
