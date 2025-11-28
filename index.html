@@ -1,43 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- ====== META TAGS ====== -->
+    <!-- Character encoding for proper text display -->
     <meta charset="utf-8" />
+    
+    <!-- Force IE/Edge to use latest rendering engine -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    
+    <!-- Viewport settings for mobile responsiveness and PWA -->
+    <!-- Prevents zooming, ensures full-screen experience on mobile devices -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui, shrink-to-fit=no, viewport-fit=cover"
     />
+    
+    <!-- Apple iOS PWA settings -->
+    <!-- Enables full-screen mode when added to home screen on iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- Makes status bar transparent for immersive experience -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Title shown on iOS home screen -->
     <meta name="apple-mobile-web-app-title" content="SILO DERPLES!" />
+    
+    <!-- SEO and general metadata -->
     <meta name="description" content="SILO DERPLES - An exciting game experience" />
+    
+    <!-- Theme colors for browser UI (address bar, etc.) -->
     <meta name="theme-color" content="#111111" />
+    <!-- Windows tile color when pinned to Start menu -->
     <meta name="msapplication-TileColor" content="#111111" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
     
-    <!-- PWA Manifest -->
+    <!-- ====== PWA MANIFEST ====== -->
+    <!-- Links to the web app manifest file for PWA installation -->
     <link rel="manifest" href="/manifest.webmanifest" />
     
-    <!-- Apple Touch Icons -->
+    <!-- ====== APP ICONS ====== -->
+    <!-- Apple Touch Icons for iOS home screen (various sizes for different devices) -->
     <link rel="apple-touch-icon" href="titlePageV2.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="titlePageV2.png" />
     <link rel="apple-touch-icon" sizes="512x512" href="titlePageV2.png" />
     
-    <!-- Favicon -->
+    <!-- Favicon for browser tab -->
     <link rel="icon" type="image/png" href="titlePageV2.png" />
     
+    <!-- ====== STYLESHEET ====== -->
+    <!-- Main stylesheet for the application -->
     <link rel="stylesheet" href="style.css" />
   </head>
 
   <body>
-    <!-- Orientation lock message for portrait mode -->
+    <!-- ====== ORIENTATION LOCK MESSAGE ====== -->
+    <!-- Displayed when device is in portrait mode - game requires landscape -->
     <div id="orientation-lock-message" class="orientation-lock-message">
       <div class="orientation-lock-icon">📱</div>
       <h2>Please Rotate Your Device</h2>
       <p>This game requires landscape orientation.<br>Please rotate your device to continue playing.</p>
     </div>
 
+    <!-- ====== MAIN GAME CONTAINER ====== -->
+    <!-- Container for the game canvas and related UI elements -->
     <div id="app-container" class="canvas-app-container">
+      
+      <!-- Warning message shown when opening file directly (file:// protocol) -->
+      <!-- The game needs to run from a web server for proper functionality -->
       <div id="running-from-file-warning" style="display: none; margin: 3em">
         <h1>Running from local file ⚠️</h1>
         <p>
@@ -57,6 +84,9 @@
           >.
         </p>
       </div>
+      
+      <!-- Error message shown when WebGL is not supported by the browser -->
+      <!-- WebGL is required for the game engine to render graphics -->
       <div id="webgl-not-supported" style="display: none; margin: 3em">
         <h1>WebGL not supported ⚠️</h1>
         <p>
@@ -65,27 +95,39 @@
           more.
         </p>
       </div>
+      
+      <!-- Canvas container - holds the game rendering canvas -->
       <div id="canvas-container" class="canvas-app-canvas-container">
+        <!-- Main game canvas where the Defold game engine renders -->
+        <!-- tabindex="1" allows keyboard focus for game controls -->
         <canvas
           id="canvas"
           class="canvas-app-canvas"
           tabindex="1"
         ></canvas>
       </div>
+      
+      <!-- Background element for UI buttons -->
       <div class="buttons-background"></div>
     </div>
 
+    <!-- ====== LANDING PAGE BACKGROUND ====== -->
+    <!-- Background shown on the landing/auth screen -->
     <div class="landing-background" id="landing-background"></div>
 
+    <!-- ====== AUTHENTICATION OVERLAY ====== -->
+    <!-- Overlay containing the authentication/login interface -->
     <div class="overlay" id="auth-overlay">
       <div class="landing-content">
         <div id="signin-section">
           <div class="panel">
+            <!-- Email input and magic link button row -->
             <div class="row">
               <input id="email" type="email" placeholder="you@example.com" />
               <button id="send-link" class="primary">Send magic link</button>
             </div>
 
+            <!-- Guest play and sign out button row -->
             <div class="row">
               <button id="guest">Guest quick play (30 turns)</button>
               <button id="signout" class="hide">Sign out</button>
@@ -96,6 +138,9 @@
     </div>
 
     <!-- ====== SCRIPTS ====== -->
+    
+    <!-- Browser compatibility: Ensure globalThis exists for older browsers -->
+    <!-- globalThis is used by modern JavaScript libraries and the game engine -->
     <script>
       // Fallback to make sure globalThis is available when running in an old browser
       if (typeof globalThis === "undefined") {
@@ -103,18 +148,25 @@
       }
     </script>
 
+    <!-- Defold game engine loader -->
+    <!-- This script loads the Defold HTML5 game engine (dmloader.js) -->
     <script
       id="engine-loader"
       type="text/javascript"
       src="dmloader.js"
     ></script>
 
+    <!-- ====== ENGINE SETUP SCRIPT ====== -->
+    <!-- Configures the game engine and sets up canvas resizing -->
     <script id="engine-setup" type="text/javascript">
-      // Game will be loaded when startNewGame() is called
+      // ====== GAME ENGINE STATE TRACKING ======
+      // Track whether the game engine has been loaded (lazy loading to save resources)
       window.GAME_ENGINE_LOADED = false;
       window.GAME_ENGINE_LOADING = false;
 
+      // ====== GAME AUTHENTICATION STUB ======
       // Ensure GameAuth exists before engine loads (safety check)
+      // If app.js hasn't loaded yet, create a minimal stub to prevent errors
       if (!window.GameAuth) {
         console.warn("[Engine] GameAuth not found, creating minimal stub...");
         window.GameAuth = {
@@ -129,63 +181,80 @@
         };
       }
 
-      // Override CUSTOM_PARAMETERS.start_success to mark engine as loaded
+      // ====== CANVAS RESIZE CALLBACK ======
+      // This function is called by the Defold engine when the window is resized
+      // It ensures the game canvas maintains proper aspect ratio and fits the viewport
       if (typeof CUSTOM_PARAMETERS === 'undefined') {
         var CUSTOM_PARAMETERS = {};
       }
       CUSTOM_PARAMETERS.resize_window_callback = function() {
+        // ====== iOS DETECTION ======
+        // Detect iOS devices for special handling
         var is_iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        var buttonHeight = 0;
+        var buttonHeight = 0; // Space reserved for UI buttons (currently none)
         
-        // Hack for iOS when exit from Fullscreen mode
+        // ====== iOS FULLSCREEN FIX ======
+        // Hack for iOS when exiting Fullscreen mode - prevents scroll issues
         if (is_iOS) {
           window.scrollTo(0, 0);
         }
       
+        // ====== GET DOM ELEMENTS ======
         var app_container = document.getElementById('app-container');
         var game_canvas = document.getElementById('canvas');
         var canvas_container = document.getElementById('canvas-container');
         
-        // Game's native resolution (internal canvas size)
+        // ====== GAME NATIVE RESOLUTION ======
+        // The game is designed to run at 1280x720 (16:9 aspect ratio)
+        // This is the internal resolution the game engine uses
         var nativeWidth = 1280;
         var nativeHeight = 720;
-        var targetRatio = nativeWidth / nativeHeight;
+        var targetRatio = nativeWidth / nativeHeight; // 16:9 = 1.777...
         
-        // Available viewport dimensions
+        // ====== VIEWPORT DIMENSIONS ======
+        // Get available screen space (viewport)
         var viewportWidth = window.innerWidth;
         var viewportHeight = window.innerHeight - buttonHeight;
         var viewportRatio = viewportWidth / viewportHeight;
         
-        // Calculate display size to fit viewport while maintaining aspect ratio
+        // ====== CALCULATE DISPLAY SIZE ======
+        // Calculate how big to display the canvas while maintaining 16:9 aspect ratio
+        // The canvas will scale to fit the viewport without distortion
         var displayWidth, displayHeight;
         
         if (viewportRatio > targetRatio) {
-          // Viewport is wider - fit to height
+          // Viewport is wider than 16:9 - fit to height (letterbox on sides)
           displayHeight = viewportHeight;
           displayWidth = displayHeight * targetRatio;
         } else {
-          // Viewport is taller - fit to width
+          // Viewport is taller than 16:9 - fit to width (letterbox on top/bottom)
           displayWidth = viewportWidth;
           displayHeight = displayWidth / targetRatio;
         }
         
-        // Ensure we don't exceed native size on desktop (optional - remove if you want to scale up)
-        // Uncomment these lines if you want to cap at native size on large screens:
+        // ====== OPTIONAL: CAP AT NATIVE SIZE ======
+        // Uncomment these lines if you want to prevent upscaling on large screens
+        // This would keep the game at 1280x720 even on 4K displays
         // if (displayWidth > nativeWidth) {
         //   displayWidth = nativeWidth;
         //   displayHeight = nativeHeight;
         // }
         
-        // Set internal canvas resolution (game engine uses this)
-        // Always maintain native resolution 1280x720, don't use devicePixelRatio
+        // ====== SET CANVAS INTERNAL RESOLUTION ======
+        // Always maintain native resolution 1280x720 for the game engine
+        // Don't use devicePixelRatio - we want consistent game resolution
+        // The browser will handle scaling for high-DPI displays
         game_canvas.width = nativeWidth;
         game_canvas.height = nativeHeight;
         
-        // Set display size (how it appears on screen) - responsive to viewport
+        // ====== SET CANVAS DISPLAY SIZE ======
+        // This is how big the canvas appears on screen (responsive to viewport)
+        // CSS scaling handles the visual size, while width/height handle internal resolution
         game_canvas.style.width = displayWidth + "px";
         game_canvas.style.height = displayHeight + "px";
         
-        // Set container size
+        // ====== SET CONTAINER SIZE ======
+        // Center the game container and set its size
         app_container.style.width = displayWidth + "px";
         app_container.style.height = (displayHeight + buttonHeight) + "px";
         app_container.style.marginLeft = "auto";
@@ -193,7 +262,8 @@
         app_container.style.marginTop = "auto";
         app_container.style.marginBottom = "auto";
         
-        // Set canvas container size
+        // ====== SET CANVAS CONTAINER SIZE ======
+        // Match the canvas container to the canvas display size
         if (canvas_container) {
           canvas_container.style.width = displayWidth + "px";
           canvas_container.style.height = displayHeight + "px";
@@ -201,20 +271,28 @@
       };
     </script>
 
+    <!-- ====== ENGINE START SCRIPT ====== -->
+    <!-- Handles initial setup and canvas initialization -->
     <script id="engine-start" type="text/javascript">
+      // ====== CHECK IF RUNNING FROM FILE PROTOCOL ======
+      // Detect if the page was opened directly as a file (file://)
+      // Games need to run from a web server for proper functionality
       var runningFromFileWarning = document.getElementById(
         "running-from-file-warning"
       );
       if (window.location.href.startsWith("file://")) {
+        // Show warning if opened as file
         runningFromFileWarning.style.display = "block";
       } else {
+        // Running from web server - remove warning element if it exists
         // Engine will be loaded when guest button is clicked or startNewGame() is called
-        // Don't load immediately to save resources
+        // Don't load immediately to save resources (lazy loading)
         if (runningFromFileWarning && runningFromFileWarning.parentNode) {
           runningFromFileWarning.parentNode.removeChild(runningFromFileWarning);
         }
       }
       
+      // ====== CANVAS SIZE INITIALIZATION ======
       // Call resize callback immediately to set correct canvas size on page load
       // This ensures canvas has proper dimensions before game engine starts
       function initializeCanvasSize() {
@@ -224,85 +302,110 @@
         }
       }
       
+      // ====== INITIALIZE CANVAS ON PAGE LOAD ======
       // Call immediately if DOM is ready, otherwise wait for DOMContentLoaded
       if (document.readyState === 'loading') {
+        // DOM is still loading - wait for it
         document.addEventListener('DOMContentLoaded', initializeCanvasSize);
       } else {
-        // DOM is already ready, call immediately
+        // DOM is already ready - call immediately
         initializeCanvasSize();
       }
       
-      // Also call on window load as a backup
+      // Also call on window load as a backup (ensures everything is ready)
       window.addEventListener('load', initializeCanvasSize);
     </script>
 
+    <!-- ====== ORIENTATION & SERVICE WORKER SCRIPT ====== -->
+    <!-- Handles landscape orientation enforcement and PWA service worker registration -->
     <script>
-      // Landscape orientation enforcement
+      // ====== ORIENTATION CHECK FUNCTION ======
+      // Checks if device is in portrait mode and shows/hides the rotation message
       function checkOrientation() {
         var orientationMessage = document.getElementById('orientation-lock-message');
+        // Portrait mode: height > width
         var isPortrait = window.innerHeight > window.innerWidth;
         
         if (orientationMessage) {
           if (isPortrait) {
+            // Show message to rotate device
             orientationMessage.classList.add('show');
           } else {
+            // Hide message - device is in landscape
             orientationMessage.classList.remove('show');
           }
         }
       }
       
-      // Check orientation on load
+      // ====== ORIENTATION EVENT LISTENERS ======
+      // Check orientation on page load
       window.addEventListener('load', checkOrientation);
       
-      // Check orientation on resize (handles device rotation)
+      // Check orientation on window resize (handles device rotation on desktop)
       window.addEventListener('resize', checkOrientation);
       
-      // Check orientation on orientationchange (more reliable for mobile)
+      // Check orientation on orientationchange event (more reliable for mobile devices)
       window.addEventListener('orientationchange', function() {
-        // Small delay to ensure dimensions are updated
+        // Small delay to ensure window dimensions are updated after rotation
         setTimeout(checkOrientation, 100);
       });
       
-      // Initial check
+      // ====== INITIAL ORIENTATION CHECK ======
+      // Run check immediately if DOM is ready, otherwise wait
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', checkOrientation);
       } else {
         checkOrientation();
       }
       
-      // Safari compatibility check
+      // ====== SAFARI BROWSER DETECTION ======
+      // Safari has limited Service Worker support in older versions
+      // Detect Safari for compatibility warnings
       var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) || 
                      /iPad|iPhone|iPod/.test(navigator.userAgent);
       
       if (isSafari) {
         console.log('[Safari] Safari browser detected');
-        // Safari may have limited Service Worker support in older versions
+        // Check Safari version - Service Workers need Safari 11.1+
         var safariVersion = navigator.userAgent.match(/Version\/(\d+)/);
         if (safariVersion && parseInt(safariVersion[1]) < 11) {
           console.warn('[Safari] Service Workers may not be fully supported in this Safari version');
         }
       }
       
+      // ====== SERVICE WORKER REGISTRATION ======
+      // Register service worker for PWA functionality (offline support, caching, etc.)
       if ("serviceWorker" in navigator) {
+        // Wait for page to fully load before registering service worker
         window.addEventListener("load", () => {
+          // Register the service worker script (sw.js)
           navigator.serviceWorker.register("sw.js").catch((err) => {
             console.warn("Service worker failed:", err);
+            // Provide helpful message for Safari users
             if (isSafari) {
               console.warn("[Safari] Service Worker registration failed - this may be expected in older Safari versions");
             }
           });
         });
       } else if (isSafari) {
+        // Service Workers not supported at all in this Safari version
         console.warn('[Safari] Service Workers not supported in this Safari version');
       }
     </script>
 
+    <!-- ====== EXTERNAL LIBRARIES ====== -->
+    <!-- Supabase client library for authentication and database -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Notyf notification library - for toast notifications -->
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css"
     />
     <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+    
+    <!-- ====== MAIN APPLICATION SCRIPT ====== -->
+    <!-- Contains game logic, authentication, and UI interactions -->
     <script src="app.js"></script>
   </body>
 </html>
