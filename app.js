@@ -121,8 +121,10 @@ window.GameAuth = {
 
       if (wallet.tokens < 1) {
         console.log('[GameAuth] Insufficient tokens to start session');
+        window.GAME_AUTH_MODE = 'guest';
+        console.log('[GameAuth] Switching to guest mode due to insufficient tokens');
         if (window.notyf) {
-          window.notyf.error('Insufficient tokens to start session');
+          window.notyf.error('Due to insufficient tokens, you have been switched to guest mode');
         }
         return false;
       }
@@ -281,6 +283,28 @@ window.GameAuth = {
       console.error('[GameAuth] Exception in getTopScores:', error);
       return [];
     }
+  },
+  isFirstSignIn: function() {
+    try {
+      // Check if flag exists in localStorage
+      const hasSeenNotification = localStorage.getItem('email_signin_notification_shown');
+      if (hasSeenNotification === 'true') {
+        return false; // User has seen notification before
+      }
+      
+      // Check if we're in email mode and flag is not set (first sign-in)
+      if (window.GAME_AUTH_MODE === 'email' && !hasSeenNotification) {
+        // Mark as shown in localStorage
+        localStorage.setItem('email_signin_notification_shown', 'true');
+        console.log('[GameAuth] First sign-in detected, notification will be shown');
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('[GameAuth] Exception in isFirstSignIn:', error);
+      return false;
+    }
   }
 };
 
@@ -324,11 +348,11 @@ async function handleEmailConfirmation() {
 
         if (data.user) {
           console.log('[Auth] Email confirmed, user signed in:', data.user.email);
-          // Clear URL hash
           window.history.replaceState(null, '', window.location.pathname);
-          // Update auth state
           window.GAME_AUTH_MODE = 'email';
-          // Set flag to auto-start game when DOM is ready
+          if (!localStorage.getItem('email_signin_notification_shown')) {
+            console.log('[Auth] First email sign-in detected');
+          }
           window.AUTO_START_EMAIL = true;
         }
       }
