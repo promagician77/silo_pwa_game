@@ -456,6 +456,7 @@ async function handleEmailConfirmation() {
 // ====== CHECK EXISTING SESSION ======
 // Checks if user has an active session when the page loads
 // Used to automatically sign in returning users
+// Validates session with server to detect if user was removed from Supabase
 async function checkAuthSession() {
   // ====== SUPABASE AVAILABILITY CHECK ======
   if (!supabaseClient) {
@@ -464,28 +465,41 @@ async function checkAuthSession() {
   }
 
   try {
-    // ====== GET CURRENT SESSION ======
-    // Check if user has a valid authentication session
-    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    // ====== VALIDATE SESSION WITH SERVER ======
+    // Use getUser() instead of getSession() to verify session is valid on server
+    // This detects cases where user was removed from Supabase but session is cached
+    const { data: { user }, error } = await supabaseClient.auth.getUser();
     
     if (error) {
-      console.error('[Auth] Error getting session:', error);
+      console.error('[Auth] Error validating session:', error);
+      // ====== CLEAR INVALID SESSION ======
+      // If session is invalid (e.g., user removed from Supabase), clear it
+      await supabaseClient.auth.signOut();
+      window.GAME_AUTH_MODE = 'guest';
       return false;
     }
 
-    // ====== SESSION FOUND ======
-    if (session && session.user) {
-      console.log('[Auth] Existing session found:', session.user.email);
+    // ====== VALID USER FOUND ======
+    if (user) {
+      console.log('[Auth] Valid session found:', user.email);
       window.GAME_AUTH_MODE = 'email';
       return true;
     } else {
-      // ====== NO SESSION ======
-      console.log('[Auth] No existing session');
+      // ====== NO VALID USER ======
+      console.log('[Auth] No valid user found');
       window.GAME_AUTH_MODE = 'guest';
       return false;
     }
   } catch (error) {
     console.error('[Auth] Exception checking session:', error);
+    // ====== CLEAR SESSION ON ERROR ======
+    // On error, clear any potentially invalid session
+    try {
+      await supabaseClient.auth.signOut();
+    } catch (signOutError) {
+      // Ignore sign out errors
+    }
+    window.GAME_AUTH_MODE = 'guest';
     return false;
   }
 }
@@ -569,15 +583,50 @@ document.addEventListener('DOMContentLoaded', function() {
   // ====== AUTO-START FOR EXISTING SESSIONS ======
   // Check for existing session and auto-start game if user is already signed in
   // This provides seamless experience for returning users
+  // If no valid session, ensure auth overlay is visible
   checkAuthSession().then(hasSession => {
     if (hasSession && supabaseClient) {
-      supabaseClient.auth.getUser().then(({ data: { user } }) => {
-        if (user) {
+      supabaseClient.auth.getUser().then(({ data: { user }, error }) => {
+        if (user && !error) {
           console.log('[Auth] User already signed in, auto-starting game...');
           // Auto-start game in email mode
           startGame('email');
+        } else {
+          // ====== INVALID SESSION - SHOW AUTH OVERLAY ======
+          // User was removed from Supabase or session is invalid
+          console.log('[Auth] Session invalid, showing auth overlay');
+          window.GAME_AUTH_MODE = 'guest';
+          // Ensure auth overlay is visible
+          if (authOverlay) {
+            authOverlay.style.display = '';
+            authOverlay.classList.remove('fade-out');
+          }
+          if (landingBackground) {
+            landingBackground.style.display = '';
+            landingBackground.classList.remove('fade-out');
+          }
+          if (appContainer) {
+            appContainer.classList.remove('game-active');
+          }
+          updateAuthUI(false);
         }
       });
+    } else {
+      // ====== NO SESSION - ENSURE AUTH OVERLAY IS VISIBLE ======
+      // Make sure auth overlay is shown when there's no valid session
+      console.log('[Auth] No valid session, ensuring auth overlay is visible');
+      if (authOverlay) {
+        authOverlay.style.display = '';
+        authOverlay.classList.remove('fade-out');
+      }
+      if (landingBackground) {
+        landingBackground.style.display = '';
+        landingBackground.classList.remove('fade-out');
+      }
+      if (appContainer) {
+        appContainer.classList.remove('game-active');
+      }
+      updateAuthUI(false);
     }
   });
 
@@ -592,6 +641,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // ====== AUTH STATE CHANGE LISTENER ======
   // Listen for authentication state changes (sign in, sign out, token refresh)
   // Automatically starts game when user signs in
+  // Shows auth overlay when user is signed out (including when removed from Supabase)
   if (supabaseClient) {
     supabaseClient.auth.onAuthStateChange((event, session) => {
       console.log('[Auth] Auth state changed:', event, session?.user?.email || 'no user');
@@ -601,9 +651,25 @@ document.addEventListener('DOMContentLoaded', function() {
         // Auto-start game when signed in
         console.log('[Auth] User signed in, auto-starting game...');
         startGame('email');
-      } else if (event === 'SIGNED_OUT') {
+      } else if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
+        // ====== USER SIGNED OUT OR SESSION INVALID ======
+        // Show auth overlay when user signs out or session becomes invalid
         window.GAME_AUTH_MODE = 'guest';
         updateAuthUI(false);
+        
+        // ====== SHOW AUTH OVERLAY ======
+        // Ensure auth overlay is visible when user is signed out
+        if (authOverlay) {
+          authOverlay.style.display = '';
+          authOverlay.classList.remove('fade-out');
+        }
+        if (landingBackground) {
+          landingBackground.style.display = '';
+          landingBackground.classList.remove('fade-out');
+        }
+        if (appContainer) {
+          appContainer.classList.remove('game-active');
+        }
       }
     });
   }
