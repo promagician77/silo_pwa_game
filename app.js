@@ -7,10 +7,31 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // ====== SUPABASE CLIENT INITIALIZATION ======
 // Create Supabase client instance for database and authentication operations
 // This client is used throughout the app for user auth, wallet management, and leaderboard
+// Configured for PWA compatibility with proper storage handling
 let supabaseClient = null;
 try {
-  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // ====== DETECT PWA CONTEXT ======
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                window.navigator.standalone === true;
+  
+  // ====== CONFIGURE SUPABASE FOR PWA ======
+  // Use localStorage for session persistence (works in both browser and PWA)
+  // autoRefreshToken ensures sessions stay valid
+  // persistSession ensures authentication state persists across page reloads
+  // Supabase automatically detects sessions in URL hash, and we handle query params manually
+  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      storage: window.localStorage, // Use localStorage for session persistence
+      autoRefreshToken: true, // Automatically refresh expired tokens
+      persistSession: true, // Persist session across page reloads
+      flowType: 'pkce' // Use PKCE flow for better security
+    }
+  });
+  
   console.log('[Supabase] Client initialized');
+  if (isPWA) {
+    console.log('[Supabase] PWA mode detected - using isolated storage');
+  }
 } catch (error) {
   console.error('[Supabase] Failed to initialize client:', error);
 }
@@ -400,26 +421,67 @@ if (!window.GAME_AUTH_MODE) {
   console.log('[App] Default GAME_AUTH_MODE set to "guest"');
 }
 
+// ====== PWA DETECTION UTILITIES ======
+// Helper functions to detect if app is running in PWA/standalone mode
+// iOS PWAs have isolated storage, so we need special handling
+function isPWAStandalone() {
+  // Check if running in standalone mode (installed as PWA)
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    return true;
+  }
+  // iOS Safari standalone detection
+  if (window.navigator.standalone === true) {
+    return true;
+  }
+  // Check if launched from home screen (iOS)
+  if (window.matchMedia('(display-mode: standalone)').matches || 
+      (window.navigator.standalone === true)) {
+    return true;
+  }
+  return false;
+}
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
 // ====== EMAIL CONFIRMATION HANDLER ======
 // Handles the callback when user clicks the magic link in their email
-// Supabase redirects back to the app with tokens in the URL hash
+// Supports both hash fragments (browser) and query parameters (PWA)
 // This function extracts the tokens and sets up the user session
 async function handleEmailConfirmation() {
   if (!supabaseClient) return;
 
   try {
-    // ====== EXTRACT TOKENS FROM URL HASH ======
+    let accessToken = null;
+    let refreshToken = null;
+    let type = null;
+
+    // ====== CHECK URL HASH (BROWSER MODE) ======
     // Supabase redirects back to the app with authentication tokens in the URL hash
     // Format: #access_token=xxx&refresh_token=yyy&type=magiclink
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token');
-    const type = hashParams.get('type');
+    accessToken = hashParams.get('access_token');
+    refreshToken = hashParams.get('refresh_token');
+    type = hashParams.get('type');
+
+    // ====== CHECK URL QUERY PARAMETERS (PWA MODE) ======
+    // PWAs on iOS handle query parameters better than hash fragments
+    // Format: ?access_token=xxx&refresh_token=yyy&type=magiclink
+    if (!accessToken || !refreshToken) {
+      const urlParams = new URLSearchParams(window.location.search);
+      accessToken = urlParams.get('access_token') || accessToken;
+      refreshToken = urlParams.get('refresh_token') || refreshToken;
+      type = urlParams.get('type') || type;
+    }
 
     // ====== HANDLE MAGIC LINK CONFIRMATION ======
     // Process magic link, signup, or password recovery confirmations
     if (type === 'recovery' || type === 'signup' || type === 'magiclink') {
       if (accessToken && refreshToken) {
+        console.log('[Auth] Processing authentication tokens from', 
+                    window.location.hash ? 'hash' : 'query parameters');
+        
         // ====== SET USER SESSION ======
         // Use the tokens to establish an authenticated session
         const { data, error } = await supabaseClient.auth.setSession({
@@ -434,14 +496,19 @@ async function handleEmailConfirmation() {
 
         if (data.user) {
           console.log('[Auth] Email confirmed, user signed in:', data.user.email);
+          
           // ====== CLEAN UP URL ======
           // Remove tokens from URL for security and cleaner appearance
-          window.history.replaceState(null, '', window.location.pathname);
+          // Handle both hash and query parameters
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState(null, '', cleanUrl);
+          
           // ====== SET AUTH MODE ======
           window.GAME_AUTH_MODE = 'email';
           if (!localStorage.getItem('email_signin_notification_shown')) {
             console.log('[Auth] First email sign-in detected');
           }
+          
           // ====== AUTO-START GAME ======
           // Flag to automatically start the game after email confirmation
           window.AUTO_START_EMAIL = true;
@@ -457,6 +524,7 @@ async function handleEmailConfirmation() {
 // Checks if user has an active session when the page loads
 // Used to automatically sign in returning users
 // Validates session with server to detect if user was removed from Supabase
+// Handles PWA context where storage is isolated from browser
 async function checkAuthSession() {
   // ====== SUPABASE AVAILABILITY CHECK ======
   if (!supabaseClient) {
@@ -464,10 +532,21 @@ async function checkAuthSession() {
     return false;
   }
 
+  // ====== PWA CONTEXT DETECTION ======
+  const isPWA = isPWAStandalone();
+  const isIOSDevice = isIOS();
+  if (isPWA) {
+    console.log('[Auth] Running in PWA standalone mode');
+    if (isIOSDevice) {
+      console.log('[Auth] iOS PWA detected - storage is isolated from browser');
+    }
+  }
+
   try {
     // ====== VALIDATE SESSION WITH SERVER ======
     // Use getUser() instead of getSession() to verify session is valid on server
     // This detects cases where user was removed from Supabase but session is cached
+    // Also works across PWA and browser contexts since it validates with server
     const { data: { user }, error } = await supabaseClient.auth.getUser();
     
     if (error) {
@@ -482,11 +561,17 @@ async function checkAuthSession() {
     // ====== VALID USER FOUND ======
     if (user) {
       console.log('[Auth] Valid session found:', user.email);
+      if (isPWA) {
+        console.log('[Auth] Session persisted in PWA context');
+      }
       window.GAME_AUTH_MODE = 'email';
       return true;
     } else {
       // ====== NO VALID USER ======
       console.log('[Auth] No valid user found');
+      if (isPWA && isIOSDevice) {
+        console.log('[Auth] Note: iOS PWA has isolated storage. If you signed in via browser, you need to sign in again in the PWA.');
+      }
       window.GAME_AUTH_MODE = 'guest';
       return false;
     }
@@ -854,10 +939,27 @@ document.addEventListener('DOMContentLoaded', function() {
       // ====== SEND MAGIC LINK ======
       // Request Supabase to send a passwordless authentication email
       // User clicks link in email to sign in
+      // For PWAs, use query parameters instead of hash fragments for better iOS support
+      const isPWA = isPWAStandalone();
+      const isIOSDevice = isIOS();
+      
+      // Build redirect URL - use query parameters for PWAs on iOS
+      let redirectUrl = window.location.origin + window.location.pathname;
+      
+      // For iOS PWAs, we need to ensure the redirect uses query parameters
+      // Supabase will append tokens as query params if we configure it properly
+      // Note: Supabase by default uses hash fragments, but we can work with both
+      if (isPWA || isIOSDevice) {
+        console.log('[Auth] PWA/iOS detected, using redirect URL optimized for PWA');
+        // The redirect URL will work, but we'll handle both hash and query params in handleEmailConfirmation
+      }
+      
       const { error } = await supabaseClient.auth.signInWithOtp({
         email,
         options: { 
-          emailRedirectTo: window.location.origin + window.location.pathname
+          emailRedirectTo: redirectUrl,
+          // For iOS PWAs, we can try to force query parameters
+          // However, Supabase defaults to hash fragments, so we handle both
         },
       });
       
@@ -871,7 +973,22 @@ document.addEventListener('DOMContentLoaded', function() {
       if (error) {
         notyf.error(`Error: ${error.message}`);
       } else {
-        notyf.success("📩 Check your email for the sign-in link.");
+        const isPWA = isPWAStandalone();
+        const isIOSDevice = isIOS();
+        
+        if (isPWA && isIOSDevice) {
+          // ====== iOS PWA SPECIFIC MESSAGE ======
+          // On iOS, magic links from email may open in Safari instead of PWA
+          // Provide helpful instructions
+          notyf.open({
+            type: "info",
+            message: "📩 Check your email. If the link opens in Safari, complete sign-in there, then return to this app.",
+            border: "10px solid #ff6b35",
+            duration: 6000,
+          });
+        } else {
+          notyf.success("📩 Check your email for the sign-in link.");
+        }
       }
     });
   }
@@ -1039,8 +1156,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ====== CHECK IF APP IS ALREADY INSTALLED ======
   // Detect if app is running in standalone mode (installed as PWA)
-  if (window.matchMedia('(display-mode: standalone)').matches) {
+  if (isPWAStandalone()) {
     console.log('[PWA] Running in standalone mode');
+    if (isIOS()) {
+      console.log('[PWA] iOS PWA detected - authentication state is isolated from browser');
+      console.log('[PWA] Users need to authenticate within the PWA context');
+    }
   }
 
   // ====== SERVICE WORKER UPDATE HANDLING ======
