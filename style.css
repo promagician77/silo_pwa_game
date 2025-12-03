@@ -690,7 +690,7 @@ textarea {
 .canvas-app-canvas {
   background-repeat: no-repeat;
   background-position: center center;
-  background-image: url("titlePage.png");
+  background-image: url("titlePage_Loading.png");
 }
 
 /* Notyf notification styling */
