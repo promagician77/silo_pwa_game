@@ -445,36 +445,6 @@ function isIOS() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
-// ====== ORIENTATION LOCK (MOBILE) ======
-// Attempts to lock the screen to landscape on supported mobile browsers after a user gesture
-function requestLandscapeLock() {
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const canLock = screen.orientation && screen.orientation.lock;
-  if (!isMobile || !canLock) {
-    return Promise.resolve(false);
-  }
-
-  // Some browsers require fullscreen before allowing orientation lock
-  const ensureFullscreen = () => {
-    const el = document.documentElement;
-    if (document.fullscreenElement || !el.requestFullscreen) {
-      return Promise.resolve();
-    }
-    return el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
-  };
-
-  return ensureFullscreen()
-    .then(() => screen.orientation.lock('landscape'))
-    .then(() => {
-      console.log('[Orientation] Locked to landscape');
-      return true;
-    })
-    .catch((err) => {
-      console.warn('[Orientation] Could not lock orientation:', err);
-      return false;
-    });
-}
-
 // ====== EMAIL CONFIRMATION HANDLER ======
 // Handles the callback when user clicks the magic link in their email
 // Supports both hash fragments (browser) and query parameters (PWA)
@@ -789,6 +759,50 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  // ====== AUTOMATIC LANDSCAPE ORIENTATION HELPER ======
+  // Helper function to force landscape orientation on mobile devices
+  // Called when game starts to automatically rotate the screen
+  function forceLandscapeOrientation() {
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!isMobile) {
+      console.log('[Orientation] Desktop device, no lock needed');
+      return Promise.resolve(false);
+    }
+
+    if (!screen.orientation || !screen.orientation.lock) {
+      console.log('[Orientation] Screen orientation lock not supported');
+      return Promise.resolve(false);
+    }
+
+    console.log('[Orientation] Forcing landscape orientation...');
+    
+    // Try to lock directly
+    return screen.orientation.lock('landscape')
+      .then(() => {
+        console.log('[Orientation] ✓ Successfully locked to landscape');
+        return true;
+      })
+      .catch((err) => {
+        console.log('[Orientation] Direct lock failed, trying fullscreen method...');
+        
+        // Fallback: Try fullscreen first, then lock
+        if (document.documentElement.requestFullscreen) {
+          return document.documentElement.requestFullscreen({ navigationUI: 'hide' })
+            .then(() => screen.orientation.lock('landscape'))
+            .then(() => {
+              console.log('[Orientation] ✓ Locked to landscape via fullscreen');
+              return true;
+            })
+            .catch((fullscreenErr) => {
+              console.warn('[Orientation] Could not lock:', fullscreenErr.message);
+              return false;
+            });
+        }
+        
+        return false;
+      });
+  }
+
   // ====== VERIFY ENGINE CONNECTION ======
   // Verifies that the game engine can access the GameAuth API and bridge objects
   // Used for debugging connection issues between JavaScript and Defold engine
@@ -845,13 +859,27 @@ document.addEventListener('DOMContentLoaded', function() {
     authOverlay.classList.add('fade-out');
     landingBackground.classList.add('fade-out');
     
-    // ====== ATTEMPT ORIENTATION LOCK ======
-    requestLandscapeLock().then((locked) => {
-      if (!locked) {
-        console.log('[Orientation] Lock not available; relying on rotate prompt');
-      }
-    });
-
+    // ====== AUTOMATIC LANDSCAPE ORIENTATION LOCK ======
+    // Force landscape mode automatically on mobile devices
+    // User doesn't need to manually rotate their phone
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile && screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape')
+        .then(() => {
+          console.log('[Orientation] ✓ Automatically locked to landscape');
+        })
+        .catch((err) => {
+          console.log('[Orientation] Lock will activate after interaction:', err.message);
+          // Try with fullscreen as fallback
+          if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen({ navigationUI: 'hide' })
+              .then(() => screen.orientation.lock('landscape'))
+              .then(() => console.log('[Orientation] ✓ Locked via fullscreen'))
+              .catch(() => console.log('[Orientation] Fullscreen lock unavailable'));
+          }
+        });
+    }
+    
     // ====== DELAYED GAME START ======
     // Wait for fade-out animation to complete before showing game
     setTimeout(() => {
@@ -920,6 +948,10 @@ document.addEventListener('DOMContentLoaded', function() {
       
       window.GAME_AUTH_MODE = 'guest';
       console.log('[Auth] Set GAME_AUTH_MODE to "guest"');
+      
+      // ====== FORCE LANDSCAPE ORIENTATION (USER GESTURE) ======
+      // User click provides the gesture needed for orientation lock on most browsers
+      forceLandscapeOrientation();
       
       // ====== SHOW LOADING STATE ======
       guestBtn.disabled = true;
