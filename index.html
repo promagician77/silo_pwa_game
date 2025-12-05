@@ -52,9 +52,8 @@
 
   <body>
     <!-- ====== ORIENTATION LOCK MESSAGE ====== -->
-    <!-- HIDDEN - Orientation is locked automatically via JavaScript -->
-    <!-- The game automatically forces landscape mode when started -->
-    <div id="orientation-lock-message" class="orientation-lock-message" style="display: none;">
+    <!-- Displayed when device is in portrait mode - game requires landscape -->
+    <div id="orientation-lock-message" class="orientation-lock-message">
       <div class="orientation-lock-icon">📱</div>
       <h2>Please Rotate Your Device</h2>
       <p>This game requires landscape orientation.<br>Please rotate your device to continue playing.</p>
@@ -303,49 +302,75 @@
         }
       }
       
+      // ====== MOBILE DETECTION ======
+      var isMobileDevice = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      
+      // ====== FORCE CANVAS SIZE RECALCULATION (MOBILE FIX) ======
+      // On mobile, viewport dimensions may not be stable on initial load
+      // Call resize multiple times with delays to ensure correct scaling
+      function forceCanvasSizeRecalculation() {
+        initializeCanvasSize();
+        
+        if (isMobileDevice) {
+          // Mobile fix: Call resize multiple times to catch stable viewport
+          requestAnimationFrame(function() {
+            initializeCanvasSize();
+            
+            setTimeout(function() {
+              initializeCanvasSize();
+            }, 100);
+            
+            setTimeout(function() {
+              initializeCanvasSize();
+            }, 300);
+            
+            setTimeout(function() {
+              initializeCanvasSize();
+            }, 500);
+            
+            setTimeout(function() {
+              initializeCanvasSize();
+            }, 1000);
+          });
+        }
+      }
+      
       // ====== INITIALIZE CANVAS ON PAGE LOAD ======
       // Call immediately if DOM is ready, otherwise wait for DOMContentLoaded
       if (document.readyState === 'loading') {
         // DOM is still loading - wait for it
-        document.addEventListener('DOMContentLoaded', initializeCanvasSize);
+        document.addEventListener('DOMContentLoaded', forceCanvasSizeRecalculation);
       } else {
         // DOM is already ready - call immediately
-        initializeCanvasSize();
+        forceCanvasSizeRecalculation();
       }
       
       // Also call on window load as a backup (ensures everything is ready)
-      window.addEventListener('load', initializeCanvasSize);
+      window.addEventListener('load', forceCanvasSizeRecalculation);
+      
+      // Store the function globally so it can be called when game starts
+      window.forceCanvasSizeRecalculation = forceCanvasSizeRecalculation;
     </script>
 
     <!-- ====== ORIENTATION & SERVICE WORKER SCRIPT ====== -->
     <!-- Handles landscape orientation enforcement and PWA service worker registration -->
     <script>
-      // ====== AUTOMATIC LANDSCAPE LOCK FUNCTION ======
-      // Automatically locks device to landscape - no manual rotation needed
-      // The rotation message is kept hidden as orientation is forced automatically
-      function tryLockLandscape() {
-        var canLock = screen.orientation && screen.orientation.lock;
-        var isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        
-        if (canLock && isMobile) {
-          screen.orientation.lock('landscape').then(function() {
-            console.log('[Orientation] Successfully locked to landscape');
-          }).catch(function(err) {
-            console.log('[Orientation] Lock requires user gesture:', err.message);
-          });
-        }
-      }
-      
+      // ====== ORIENTATION CHECK FUNCTION ======
+      // Checks if device is in portrait mode and shows/hides the rotation message
       function checkOrientation() {
-        // Always hide the rotation message - we force landscape automatically
         var orientationMessage = document.getElementById('orientation-lock-message');
-        if (orientationMessage) {
-          orientationMessage.classList.remove('show');
-          orientationMessage.style.display = 'none';
-        }
+        // Portrait mode: height > width
+        var isPortrait = window.innerHeight > window.innerWidth;
         
-        // Attempt to lock orientation to landscape automatically
-        tryLockLandscape();
+        if (orientationMessage) {
+          if (isPortrait) {
+            // Show message to rotate device
+            orientationMessage.classList.add('show');
+          } else {
+            // Hide message - device is in landscape
+            orientationMessage.classList.remove('show');
+          }
+        }
       }
       
       // ====== ORIENTATION EVENT LISTENERS ======

@@ -759,50 +759,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // ====== AUTOMATIC LANDSCAPE ORIENTATION HELPER ======
-  // Helper function to force landscape orientation on mobile devices
-  // Called when game starts to automatically rotate the screen
-  function forceLandscapeOrientation() {
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (!isMobile) {
-      console.log('[Orientation] Desktop device, no lock needed');
-      return Promise.resolve(false);
-    }
-
-    if (!screen.orientation || !screen.orientation.lock) {
-      console.log('[Orientation] Screen orientation lock not supported');
-      return Promise.resolve(false);
-    }
-
-    console.log('[Orientation] Forcing landscape orientation...');
-    
-    // Try to lock directly
-    return screen.orientation.lock('landscape')
-      .then(() => {
-        console.log('[Orientation] ✓ Successfully locked to landscape');
-        return true;
-      })
-      .catch((err) => {
-        console.log('[Orientation] Direct lock failed, trying fullscreen method...');
-        
-        // Fallback: Try fullscreen first, then lock
-        if (document.documentElement.requestFullscreen) {
-          return document.documentElement.requestFullscreen({ navigationUI: 'hide' })
-            .then(() => screen.orientation.lock('landscape'))
-            .then(() => {
-              console.log('[Orientation] ✓ Locked to landscape via fullscreen');
-              return true;
-            })
-            .catch((fullscreenErr) => {
-              console.warn('[Orientation] Could not lock:', fullscreenErr.message);
-              return false;
-            });
-        }
-        
-        return false;
-      });
-  }
-
   // ====== VERIFY ENGINE CONNECTION ======
   // Verifies that the game engine can access the GameAuth API and bridge objects
   // Used for debugging connection issues between JavaScript and Defold engine
@@ -859,27 +815,6 @@ document.addEventListener('DOMContentLoaded', function() {
     authOverlay.classList.add('fade-out');
     landingBackground.classList.add('fade-out');
     
-    // ====== AUTOMATIC LANDSCAPE ORIENTATION LOCK ======
-    // Force landscape mode automatically on mobile devices
-    // User doesn't need to manually rotate their phone
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile && screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('landscape')
-        .then(() => {
-          console.log('[Orientation] ✓ Automatically locked to landscape');
-        })
-        .catch((err) => {
-          console.log('[Orientation] Lock will activate after interaction:', err.message);
-          // Try with fullscreen as fallback
-          if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen({ navigationUI: 'hide' })
-              .then(() => screen.orientation.lock('landscape'))
-              .then(() => console.log('[Orientation] ✓ Locked via fullscreen'))
-              .catch(() => console.log('[Orientation] Fullscreen lock unavailable'));
-          }
-        });
-    }
-    
     // ====== DELAYED GAME START ======
     // Wait for fade-out animation to complete before showing game
     setTimeout(() => {
@@ -889,6 +824,15 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // ====== SHOW GAME CONTAINER ======
       appContainer.classList.add('game-active');
+      
+      // ====== FORCE CANVAS RESIZE (MOBILE FIX) ======
+      // Recalculate canvas size now that container is visible
+      // This fixes the scaling issue on mobile devices
+      if (window.forceCanvasSizeRecalculation) {
+        setTimeout(() => {
+          window.forceCanvasSizeRecalculation();
+        }, 50);
+      }
       
       // ====== LOAD GAME ENGINE ======
       // Load the Defold game engine if not already loaded
@@ -948,10 +892,6 @@ document.addEventListener('DOMContentLoaded', function() {
       
       window.GAME_AUTH_MODE = 'guest';
       console.log('[Auth] Set GAME_AUTH_MODE to "guest"');
-      
-      // ====== FORCE LANDSCAPE ORIENTATION (USER GESTURE) ======
-      // User click provides the gesture needed for orientation lock on most browsers
-      forceLandscapeOrientation();
       
       // ====== SHOW LOADING STATE ======
       guestBtn.disabled = true;
