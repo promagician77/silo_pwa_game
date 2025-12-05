@@ -445,6 +445,36 @@ function isIOS() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
+// ====== ORIENTATION LOCK (MOBILE) ======
+// Attempts to lock the screen to landscape on supported mobile browsers after a user gesture
+function requestLandscapeLock() {
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const canLock = screen.orientation && screen.orientation.lock;
+  if (!isMobile || !canLock) {
+    return Promise.resolve(false);
+  }
+
+  // Some browsers require fullscreen before allowing orientation lock
+  const ensureFullscreen = () => {
+    const el = document.documentElement;
+    if (document.fullscreenElement || !el.requestFullscreen) {
+      return Promise.resolve();
+    }
+    return el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+  };
+
+  return ensureFullscreen()
+    .then(() => screen.orientation.lock('landscape'))
+    .then(() => {
+      console.log('[Orientation] Locked to landscape');
+      return true;
+    })
+    .catch((err) => {
+      console.warn('[Orientation] Could not lock orientation:', err);
+      return false;
+    });
+}
+
 // ====== EMAIL CONFIRMATION HANDLER ======
 // Handles the callback when user clicks the magic link in their email
 // Supports both hash fragments (browser) and query parameters (PWA)
@@ -815,6 +845,13 @@ document.addEventListener('DOMContentLoaded', function() {
     authOverlay.classList.add('fade-out');
     landingBackground.classList.add('fade-out');
     
+    // ====== ATTEMPT ORIENTATION LOCK ======
+    requestLandscapeLock().then((locked) => {
+      if (!locked) {
+        console.log('[Orientation] Lock not available; relying on rotate prompt');
+      }
+    });
+
     // ====== DELAYED GAME START ======
     // Wait for fade-out animation to complete before showing game
     setTimeout(() => {
