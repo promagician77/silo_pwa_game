@@ -187,6 +187,7 @@
       if (typeof CUSTOM_PARAMETERS === 'undefined') {
         var CUSTOM_PARAMETERS = {};
       }
+
       CUSTOM_PARAMETERS.resize_window_callback = function() {
         // ====== iOS DETECTION ======
         // Detect iOS devices for special handling
@@ -240,18 +241,18 @@
         //   displayHeight = nativeHeight;
         // }
         
+        // ====== SET CANVAS DISPLAY SIZE FIRST ======
+        // Set CSS display size BEFORE setting canvas internal resolution
+        // This prevents a visual flash where canvas shows at 1280x720 before scaling
+        game_canvas.style.width = displayWidth + "px";
+        game_canvas.style.height = displayHeight + "px";
+        
         // ====== SET CANVAS INTERNAL RESOLUTION ======
         // Always maintain native resolution 1280x720 for the game engine
         // Don't use devicePixelRatio - we want consistent game resolution
         // The browser will handle scaling for high-DPI displays
         game_canvas.width = nativeWidth;
         game_canvas.height = nativeHeight;
-        
-        // ====== SET CANVAS DISPLAY SIZE ======
-        // This is how big the canvas appears on screen (responsive to viewport)
-        // CSS scaling handles the visual size, while width/height handle internal resolution
-        game_canvas.style.width = displayWidth + "px";
-        game_canvas.style.height = displayHeight + "px";
         
         // ====== SET CONTAINER SIZE ======
         // Center the game container and set its size
