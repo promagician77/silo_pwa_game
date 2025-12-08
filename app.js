@@ -804,6 +804,64 @@ document.addEventListener('DOMContentLoaded', function() {
   // Show/hide OTP input based on PWA mode
   updatePWAUI();
 
+  // ====== LISTEN FOR DISPLAY MODE CHANGES ======
+  // Dynamically update UI when switching between browser and PWA
+  // This handles cases where user installs PWA or opens in browser after using PWA
+  const displayModeQuery = window.matchMedia('(display-mode: standalone)');
+  
+  // Listen for changes in display mode
+  displayModeQuery.addEventListener('change', (e) => {
+    console.log('[PWA] Display mode changed:', e.matches ? 'PWA' : 'Browser');
+    updatePWAUI(); // Update UI when display mode changes
+    
+    // Show appropriate message
+    if (e.matches) {
+      // Switched to PWA mode
+      console.log('[PWA] Now running as PWA - OTP input available');
+      notyf.open({
+        type: "info",
+        message: "📱 PWA Mode: You can now use the 6-digit code from emails to sign in!",
+        border: "10px solid #ff6b35",
+        duration: 5000,
+      });
+    } else {
+      // Switched to browser mode
+      console.log('[PWA] Now running as browser - magic links available');
+    }
+  });
+
+  // Also listen for visibility changes (when user switches between apps)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      // Page became visible again - recheck PWA status
+      setTimeout(() => {
+        updatePWAUI();
+      }, 100);
+    }
+  });
+
+  // ====== PERIODIC PWA STATUS CHECK ======
+  // Backup check every 2 seconds to ensure UI stays in sync
+  // This handles edge cases where display mode events don't fire
+  let lastPWAState = isPWAStandalone();
+  setInterval(() => {
+    const currentPWAState = isPWAStandalone();
+    if (currentPWAState !== lastPWAState) {
+      console.log('[PWA] Display mode changed (detected via polling):', currentPWAState ? 'PWA' : 'Browser');
+      lastPWAState = currentPWAState;
+      updatePWAUI();
+      
+      if (currentPWAState) {
+        notyf.open({
+          type: "info",
+          message: "📱 PWA Mode: You can now use the 6-digit code from emails!",
+          border: "10px solid #ff6b35",
+          duration: 5000,
+        });
+      }
+    }
+  }, 2000); // Check every 2 seconds
+
   // ====== PWA WELCOME MESSAGE ======
   // Show helpful welcome message for ALL PWA users on first launch
   const isPWA = isPWAStandalone();
