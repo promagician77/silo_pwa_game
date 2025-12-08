@@ -127,6 +127,17 @@
               <button id="send-link" class="primary">Send magic link</button>
             </div>
 
+            <!-- OTP Code Entry Row (hidden by default, shown for PWA users) -->
+            <div class="row" id="otp-row" style="display: none;">
+              <input id="otp-code" type="text" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]*" inputmode="numeric" />
+              <button id="verify-otp" class="primary">Verify Code</button>
+            </div>
+
+            <!-- PWA Helper Text -->
+            <div id="pwa-help-text" class="help-text" style="display: none;">
+              <small>📱 PWA Mode: Enter the code from your email instead of clicking the link</small>
+            </div>
+
             <!-- Guest play and sign out button row -->
             <div class="row">
               <button id="guest">Guest quick play (30 turns)</button>
@@ -203,14 +214,13 @@
         // ====== GET DOM ELEMENTS ======
         var app_container = document.getElementById('app-container');
         var game_canvas = document.getElementById('canvas');
-        var parent = document.getElementById('canvas-container');
         var canvas_container = document.getElementById('canvas-container');
         
         // ====== GAME NATIVE RESOLUTION ======
         // The game is designed to run at 1280x720 (16:9 aspect ratio)
         // This is the internal resolution the game engine uses
-        var nativeWidth = parent.offsetWidth;
-        var nativeHeight = parent.offsetHeight;
+        var nativeWidth = 1280;
+        var nativeHeight = 720;
         var targetRatio = nativeWidth / nativeHeight; // 16:9 = 1.777...
         
         // ====== VIEWPORT DIMENSIONS ======

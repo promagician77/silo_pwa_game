@@ -397,6 +397,26 @@ input:-ms-input-placeholder {
   display: none !important;
 }
 
+.help-text {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 107, 53, 0.1);
+  border-left: 3px solid #ff6b35;
+  border-radius: 4px;
+  color: #ffd700;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: "Kalam", cursive;
+  text-align: center;
+}
+
+#otp-code {
+  text-align: center;
+  letter-spacing: 4px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
 #player-score {
   margin-top: 16px;
   padding: 16px;

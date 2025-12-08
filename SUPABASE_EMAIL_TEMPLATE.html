@@ -1,0 +1,154 @@
+<!-- 
+  SILO DERPLES - Magic Link Email Template for Supabase
+  
+  IMPORTANT: Copy this template to your Supabase Dashboard
+  Location: Supabase Dashboard > Authentication > Email Templates > Magic Link
+  
+  This template includes BOTH the magic link and the 6-digit OTP code
+  which is essential for the iOS PWA authentication fix.
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in to SILO DERPLES!</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #111111; color: #ffffff;">
+  
+  <!-- Main Container -->
+  <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+    
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 40px;">
+      <h1 style="color: #ffffff; font-size: 32px; margin: 0 0 10px 0; font-weight: bold;">
+        SILO <span style="color: #ff6b35;">DERPLES!</span>
+      </h1>
+      <p style="color: #cccccc; font-size: 16px; margin: 0;">
+        Sign in to continue playing
+      </p>
+    </div>
+    
+    <!-- Main Content Card -->
+    <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); border: 3px solid #ff6b35; border-radius: 16px; padding: 40px; margin-bottom: 30px;">
+      
+      <!-- Welcome Message -->
+      <h2 style="color: #ff6b35; font-size: 24px; margin: 0 0 20px 0; text-align: center;">
+        🎮 Ready to Play?
+      </h2>
+      
+      <!-- Method 1: Magic Link (for browser users) -->
+      <div style="margin-bottom: 30px;">
+        <p style="color: #ffffff; font-size: 16px; margin: 0 0 15px 0; text-align: center;">
+          Click the button below to sign in:
+        </p>
+        <div style="text-align: center;">
+          <a href="{{ .ConfirmationURL }}" 
+             style="display: inline-block; background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 50%, #ffa366 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 50px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);">
+            Sign In Now
+          </a>
+        </div>
+      </div>
+      
+      <!-- Divider -->
+      <div style="border-top: 2px solid #444444; margin: 30px 0; position: relative;">
+        <span style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #2d2d2d; padding: 0 15px; color: #888888; font-size: 14px;">
+          OR
+        </span>
+      </div>
+      
+      <!-- Method 2: OTP Code (for PWA users) -->
+      <div style="margin-top: 30px;">
+        <p style="color: #ffffff; font-size: 16px; margin: 0 0 15px 0; text-align: center;">
+          📱 <strong>Using the PWA?</strong> Enter this code instead:
+        </p>
+        <div style="background: rgba(255, 107, 53, 0.15); border: 2px dashed #ff6b35; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 15px;">
+          <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #ffd700; font-family: 'Courier New', monospace;">
+            {{ .Token }}
+          </div>
+        </div>
+        <p style="color: #cccccc; font-size: 14px; margin: 0; text-align: center;">
+          ⏱️ This code expires in 10 minutes
+        </p>
+      </div>
+      
+    </div>
+    
+    <!-- Help Section -->
+    <div style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+      <h3 style="color: #ff6b35; font-size: 18px; margin: 0 0 15px 0;">
+        💡 Which method should I use?
+      </h3>
+      <ul style="color: #cccccc; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+        <li><strong>Browser (Safari/Chrome):</strong> Click the "Sign In Now" button above</li>
+        <li><strong>PWA (Home Screen App):</strong> Enter the 6-digit code in the app</li>
+        <li><strong>Not sure?</strong> Try clicking the button first. If it opens Safari, go back to the app and use the code instead.</li>
+      </ul>
+    </div>
+    
+    <!-- Security Notice -->
+    <div style="border-left: 3px solid #ff6b35; padding-left: 15px; margin-bottom: 30px;">
+      <p style="color: #888888; font-size: 13px; margin: 0; line-height: 1.6;">
+        🔒 <strong>Security Notice:</strong> If you didn't request this email, you can safely ignore it. 
+        This link and code will expire in 10 minutes. Never share your sign-in code with anyone.
+      </p>
+    </div>
+    
+    <!-- Footer -->
+    <div style="text-align: center; padding-top: 20px; border-top: 1px solid #333333;">
+      <p style="color: #666666; font-size: 13px; margin: 0;">
+        SILO DERPLES! | Passwordless Gaming Authentication
+      </p>
+      <p style="color: #666666; font-size: 12px; margin: 10px 0 0 0;">
+        Having trouble? Contact support or visit our help center.
+      </p>
+    </div>
+    
+  </div>
+  
+</body>
+</html>
+
+<!-- 
+  AVAILABLE TEMPLATE VARIABLES:
+  
+  {{ .ConfirmationURL }}  - The magic link URL (full URL with tokens)
+  {{ .Token }}            - The 6-digit OTP code (e.g., "123456")
+  {{ .TokenHash }}        - Hash of the token (for advanced use)
+  {{ .SiteURL }}          - Your site's base URL
+  {{ .Email }}            - The user's email address
+  
+  CUSTOMIZATION TIPS:
+  
+  1. Update the site name if needed (replace "SILO DERPLES!")
+  2. Change colors by modifying hex values:
+     - #ff6b35 (orange) - primary brand color
+     - #ffd700 (gold) - code highlight color
+     - #111111 (black) - background color
+  
+  3. Add your logo:
+     <img src="YOUR_LOGO_URL" alt="Logo" style="max-width: 150px;">
+  
+  4. Update help center link in footer
+  
+  5. Add social media links if desired
+  
+  TESTING:
+  
+  After updating the template in Supabase:
+  1. Request a magic link from your app
+  2. Check email to verify:
+     - ✅ 6-digit code is visible
+     - ✅ Magic link button works
+     - ✅ Styling looks good on mobile
+     - ✅ All text is readable
+  
+  IMPORTANT NOTES:
+  
+  - The {{ .Token }} variable is essential for PWA authentication
+  - Don't remove this variable or iOS PWA users won't be able to sign in
+  - Test on both desktop and mobile email clients
+  - Ensure code is clearly visible and easy to read
+-->
+

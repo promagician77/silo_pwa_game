@@ -456,6 +456,7 @@ async function handleEmailConfirmation() {
     let accessToken = null;
     let refreshToken = null;
     let type = null;
+    let tokenSource = null;
 
     // ====== CHECK URL HASH (BROWSER MODE) ======
     // Supabase redirects back to the app with authentication tokens in the URL hash
@@ -464,6 +465,9 @@ async function handleEmailConfirmation() {
     accessToken = hashParams.get('access_token');
     refreshToken = hashParams.get('refresh_token');
     type = hashParams.get('type');
+    if (accessToken && refreshToken) {
+      tokenSource = 'hash';
+    }
 
     // ====== CHECK URL QUERY PARAMETERS (PWA MODE) ======
     // PWAs on iOS handle query parameters better than hash fragments
@@ -473,14 +477,28 @@ async function handleEmailConfirmation() {
       accessToken = urlParams.get('access_token') || accessToken;
       refreshToken = urlParams.get('refresh_token') || refreshToken;
       type = urlParams.get('type') || type;
+      if (accessToken && refreshToken && !tokenSource) {
+        tokenSource = 'query';
+      }
     }
+
+    // ====== DETECT PWA CONTEXT ======
+    const isPWA = isPWAStandalone();
+    const isIOSDevice = isIOS();
 
     // ====== HANDLE MAGIC LINK CONFIRMATION ======
     // Process magic link, signup, or password recovery confirmations
     if (type === 'recovery' || type === 'signup' || type === 'magiclink') {
       if (accessToken && refreshToken) {
-        console.log('[Auth] Processing authentication tokens from', 
-                    window.location.hash ? 'hash' : 'query parameters');
+        console.log('[Auth] Processing authentication tokens from', tokenSource);
+        
+        // ====== DETECT CROSS-CONTEXT AUTH ======
+        // If tokens are in browser but we're in PWA, user clicked link in Safari
+        if (!isPWA && tokenSource === 'hash') {
+          // User is in browser - set hint for PWA context
+          sessionStorage.setItem('browser_session_hint', 'true');
+          console.log('[Auth] Browser authentication - hint set for PWA');
+        }
         
         // ====== SET USER SESSION ======
         // Use the tokens to establish an authenticated session
@@ -491,6 +509,11 @@ async function handleEmailConfirmation() {
 
         if (error) {
           console.error('[Auth] Error setting session:', error);
+          
+          // ====== SHOW HELPFUL ERROR MESSAGE ======
+          if (window.notyf) {
+            window.notyf.error('Authentication failed. Please try again or use the code from your email.');
+          }
           return;
         }
 
@@ -509,15 +532,84 @@ async function handleEmailConfirmation() {
             console.log('[Auth] First email sign-in detected');
           }
           
+          // ====== STORE AUTH TIMESTAMP FOR SESSION RECOVERY ======
+          // Store timestamp when auth happens in browser (helps PWA detect recent auth)
+          if (!isPWA && isIOSDevice) {
+            localStorage.setItem('browser_auth_timestamp', Date.now().toString());
+            console.log('[Auth] Browser auth timestamp stored for PWA recovery');
+          }
+          
+          // ====== CONTEXT-AWARE MESSAGING ======
+          if (!isPWA && isIOSDevice) {
+            // User authenticated in Safari - guide them to return to PWA
+            if (window.notyf) {
+              setTimeout(() => {
+                window.notyf.open({
+                  type: "info",
+                  message: "✅ Signed in! If you have the PWA installed, open it from your home screen to continue.",
+                  border: "10px solid #4caf50",
+                  duration: 10000,
+                });
+              }, 500);
+            }
+          } else if (isPWA) {
+            // Successfully authenticated in PWA
+            console.log('[Auth] PWA authentication successful');
+            // Clear browser auth timestamp since we're now authenticated in PWA
+            localStorage.removeItem('browser_auth_timestamp');
+          }
+          
           // ====== AUTO-START GAME ======
           // Flag to automatically start the game after email confirmation
           window.AUTO_START_EMAIL = true;
+        }
+      } else {
+        // ====== MISSING TOKENS ======
+        // Tokens might be in a different context (Safari vs PWA)
+        if (isPWA && isIOSDevice) {
+          console.log('[Auth] Magic link opened in PWA but tokens missing - likely opened in Safari first');
+          // Don't show error - user might have opened link in Safari and needs to return to PWA
         }
       }
     }
   } catch (error) {
     console.error('[Auth] Error handling email confirmation:', error);
+    if (window.notyf) {
+      window.notyf.error('Authentication error. Please try again or use the code from your email.');
+    }
   }
+}
+
+// ====== SESSION RECOVERY HELPER ======
+// Attempts to recover session from browser context for PWA users
+// This helps users who authenticated in Safari and then opened the PWA
+async function attemptSessionRecovery() {
+  const isPWA = isPWAStandalone();
+  const isIOSDevice = isIOS();
+  
+  if (!isPWA || !isIOSDevice) return false;
+  
+  // Check if there's a recent authentication hint from browser
+  const browserAuthTime = localStorage.getItem('browser_auth_timestamp');
+  if (browserAuthTime) {
+    const authAge = Date.now() - parseInt(browserAuthTime);
+    // If auth was within last 5 minutes, show helpful message
+    if (authAge < 5 * 60 * 1000) {
+      console.log('[Auth] Recent browser authentication detected, but PWA has no session');
+      if (window.notyf) {
+        setTimeout(() => {
+          window.notyf.open({
+            type: "info",
+            message: "ℹ️ Tip: Use the 6-digit code from your email to sign in to the PWA directly.",
+            border: "10px solid #ff6b35",
+            duration: 7000,
+          });
+        }, 1000);
+      }
+      return true;
+    }
+  }
+  return false;
 }
 
 // ====== CHECK EXISTING SESSION ======
@@ -571,6 +663,26 @@ async function checkAuthSession() {
       console.log('[Auth] No valid user found');
       if (isPWA && isIOSDevice) {
         console.log('[Auth] Note: iOS PWA has isolated storage. If you signed in via browser, you need to sign in again in the PWA.');
+        
+        // ====== HELPFUL MESSAGE FOR PWA USERS ======
+        // Check if user might have just installed PWA from browser
+        const browserSessionHint = sessionStorage.getItem('browser_session_hint');
+        if (browserSessionHint) {
+          // User likely just installed PWA - show helpful message
+          setTimeout(() => {
+            notyf.open({
+              type: "info",
+              message: "ℹ️ iOS PWA Note: Please sign in again using the code from your email. Your session is separate from Safari.",
+              border: "10px solid #ff6b35",
+              duration: 8000,
+            });
+          }, 1500);
+          sessionStorage.removeItem('browser_session_hint');
+        } else {
+          // ====== ATTEMPT SESSION RECOVERY ======
+          // Check for recent browser authentication
+          await attemptSessionRecovery();
+        }
       }
       window.GAME_AUTH_MODE = 'guest';
       return false;
@@ -630,11 +742,16 @@ document.addEventListener('DOMContentLoaded', function() {
   const authOverlay = document.getElementById('auth-overlay');
   const landingBackground = document.getElementById('landing-background');
   const appContainer = document.getElementById('app-container');
+  const otpRow = document.getElementById('otp-row');
+  const otpCodeInput = document.getElementById('otp-code');
+  const verifyOtpBtn = document.getElementById('verify-otp');
+  const pwaHelpText = document.getElementById('pwa-help-text');
 
   // ====== GAME STATE VARIABLES ======
   // Track game state for guest mode and turn limits
   let isGuest = false;
   let guestTurnsRemaining = 30; // Guest players get 30 turns
+  let userEmailForOTP = null; // Store email when sending OTP for later verification
 
   // ====== UPDATE AUTHENTICATION UI ======
   // Updates the UI to reflect the current authentication state
@@ -651,6 +768,9 @@ document.addEventListener('DOMContentLoaded', function() {
           sendLinkBtn.innerHTML = 'Signed in';
           sendLinkBtn.disabled = true;
         }
+        // Hide OTP UI when signed in
+        if (otpRow) otpRow.style.display = 'none';
+        if (pwaHelpText) pwaHelpText.style.display = 'none';
       } else {
         signoutBtn.classList.add('hide');
         if (emailInput) {
@@ -661,7 +781,51 @@ document.addEventListener('DOMContentLoaded', function() {
           sendLinkBtn.innerHTML = 'Send magic link';
           sendLinkBtn.disabled = false;
         }
+        // Show/hide OTP UI based on PWA mode
+        updatePWAUI();
       }
+    }
+  }
+
+  // ====== UPDATE PWA-SPECIFIC UI ======
+  // Shows OTP input and helper text for iOS PWA users
+  // This provides an alternative authentication method since magic links open in Safari
+  function updatePWAUI() {
+    const isPWA = isPWAStandalone();
+    const isIOSDevice = isIOS();
+    
+    if (isPWA && isIOSDevice) {
+      // Show OTP row and help text for iOS PWA users
+      if (otpRow) otpRow.style.display = 'flex';
+      if (pwaHelpText) pwaHelpText.style.display = 'block';
+      console.log('[PWA] iOS PWA detected - showing OTP input');
+    } else {
+      // Hide OTP row for browser users (they can click magic links normally)
+      if (otpRow) otpRow.style.display = 'none';
+      if (pwaHelpText) pwaHelpText.style.display = 'none';
+    }
+  }
+
+  // ====== INITIALIZE PWA UI ======
+  // Show/hide OTP input based on PWA mode
+  updatePWAUI();
+
+  // ====== PWA WELCOME MESSAGE ======
+  // Show helpful welcome message for iOS PWA users on first launch
+  const isPWA = isPWAStandalone();
+  const isIOSDevice = isIOS();
+  if (isPWA && isIOSDevice) {
+    const pwaWelcomeShown = localStorage.getItem('pwa_welcome_shown');
+    if (!pwaWelcomeShown) {
+      setTimeout(() => {
+        notyf.open({
+          type: "info",
+          message: "📱 Welcome to SILO PWA! For the best experience, use the 6-digit code from emails to sign in.",
+          border: "10px solid #ff6b35",
+          duration: 6000,
+        });
+        localStorage.setItem('pwa_welcome_shown', 'true');
+      }, 1000);
     }
   }
 
@@ -733,6 +897,14 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (event === 'SIGNED_IN' && session) {
         window.GAME_AUTH_MODE = 'email';
+        
+        // ====== SHOW SUCCESS MESSAGE ======
+        const isPWA = isPWAStandalone();
+        const isIOSDevice = isIOS();
+        if (isPWA && isIOSDevice) {
+          notyf.success('✅ Signed in successfully! Starting game...');
+        }
+        
         // Auto-start game when signed in
         console.log('[Auth] User signed in, auto-starting game...');
         startGame('email');
@@ -985,16 +1157,26 @@ document.addEventListener('DOMContentLoaded', function() {
         const isPWA = isPWAStandalone();
         const isIOSDevice = isIOS();
         
+        // Store email for OTP verification
+        userEmailForOTP = email;
+        
         if (isPWA && isIOSDevice) {
           // ====== iOS PWA SPECIFIC MESSAGE ======
-          // On iOS, magic links from email may open in Safari instead of PWA
-          // Provide helpful instructions
+          // On iOS PWAs, show instructions for using OTP code instead of magic link
+          // This avoids the issue of magic links opening in Safari
           notyf.open({
             type: "info",
-            message: "📩 Check your email. If the link opens in Safari, complete sign-in there, then return to this app.",
+            message: "📩 Email sent! Enter the 6-digit code from your email below (or click the link in Safari and return here).",
             border: "10px solid #ff6b35",
-            duration: 6000,
+            duration: 8000,
           });
+          
+          // Focus OTP input for convenience
+          if (otpCodeInput) {
+            setTimeout(() => {
+              otpCodeInput.focus();
+            }, 500);
+          }
         } else {
           notyf.success("📩 Check your email for the sign-in link.");
         }
@@ -1028,6 +1210,101 @@ document.addEventListener('DOMContentLoaded', function() {
         window.GAME_AUTH_MODE = 'guest';
         updateAuthUI(false);
         notyf.success('Signed out successfully');
+      }
+    });
+  }
+
+  // ====== OTP VERIFICATION BUTTON HANDLER ======
+  // Handles OTP code verification for PWA users
+  // Provides alternative authentication when magic links open in Safari
+  if (verifyOtpBtn && otpCodeInput) {
+    verifyOtpBtn.addEventListener('click', async function() {
+      // ====== GET OTP CODE ======
+      const otpCode = (otpCodeInput?.value || "").trim();
+      if (!otpCode) {
+        notyf.error("Please enter the 6-digit code");
+        return;
+      }
+
+      // ====== VALIDATE OTP FORMAT ======
+      if (otpCode.length !== 6 || !/^\d+$/.test(otpCode)) {
+        notyf.error("Code must be 6 digits");
+        return;
+      }
+
+      // ====== CHECK EMAIL ======
+      const email = userEmailForOTP || (emailInput?.value || "").trim();
+      if (!email) {
+        notyf.error("Please enter your email first");
+        return;
+      }
+
+      console.log('[Auth] Verifying OTP code for:', email);
+      
+      // ====== SHOW LOADING STATE ======
+      if (verifyOtpBtn) {
+        verifyOtpBtn.disabled = true;
+        verifyOtpBtn.innerHTML = 'Verifying...<span class="loading-spinner"></span>';
+      }
+
+      // ====== CHECK SUPABASE AVAILABILITY ======
+      if (!supabaseClient) {
+        notyf.error('Authentication service not available. Please refresh the page.');
+        if (verifyOtpBtn) {
+          verifyOtpBtn.disabled = false;
+          verifyOtpBtn.innerHTML = 'Verify Code';
+        }
+        return;
+      }
+
+      try {
+        // ====== VERIFY OTP WITH SUPABASE ======
+        // Use verifyOtp to authenticate with the email and token
+        const { data, error } = await supabaseClient.auth.verifyOtp({
+          email: email,
+          token: otpCode,
+          type: 'email'
+        });
+
+        // ====== RE-ENABLE BUTTON ======
+        if (verifyOtpBtn) {
+          verifyOtpBtn.disabled = false;
+          verifyOtpBtn.innerHTML = 'Verify Code';
+        }
+
+        // ====== HANDLE RESULT ======
+        if (error) {
+          console.error('[Auth] OTP verification error:', error);
+          notyf.error(`Verification failed: ${error.message}`);
+        } else if (data.user) {
+          console.log('[Auth] OTP verified successfully:', data.user.email);
+          notyf.success('✅ Signed in successfully!');
+          
+          // Clear OTP input
+          if (otpCodeInput) otpCodeInput.value = '';
+          userEmailForOTP = null;
+          
+          // Set auth mode and auto-start game
+          window.GAME_AUTH_MODE = 'email';
+          startGame('email');
+        } else {
+          notyf.error('Verification failed. Please try again.');
+        }
+      } catch (error) {
+        console.error('[Auth] Exception verifying OTP:', error);
+        notyf.error('Verification failed. Please try again.');
+        if (verifyOtpBtn) {
+          verifyOtpBtn.disabled = false;
+          verifyOtpBtn.innerHTML = 'Verify Code';
+        }
+      }
+    });
+
+    // ====== ENTER KEY SUBMISSION FOR OTP ======
+    // Allow users to press Enter key in OTP input to submit
+    otpCodeInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        verifyOtpBtn.click();
       }
     });
   }

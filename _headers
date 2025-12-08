@@ -1,3 +1,8 @@
+# Apple App Site Association for Universal Links
+/.well-known/apple-app-site-association
+  Content-Type: application/json
+  Cache-Control: public, max-age=3600
+
 # Headers for archive files to prevent transformations
 /archive/*
   Content-Type: application/octet-stream

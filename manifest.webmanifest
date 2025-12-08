@@ -2,7 +2,7 @@
   "name": "SILO DERPLES!",
   "short_name": "SILO",
   "description": "SILO DERPLES - An exciting game experience",
-  "start_url": "/index.html",
+  "start_url": "/index.html?source=pwa",
   "scope": "/",
   "display": "standalone",
   "orientation": "landscape",
@@ -25,7 +25,20 @@
   ],
   "screenshots": [],
   "shortcuts": [],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "url": "url"
+    }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+silo",
+      "url": "/index.html?auth=%s"
+    }
+  ]
 }
 
 
