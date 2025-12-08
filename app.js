@@ -484,7 +484,6 @@ async function handleEmailConfirmation() {
 
     // ====== DETECT PWA CONTEXT ======
     const isPWA = isPWAStandalone();
-    const isIOSDevice = isIOS();
 
     // ====== HANDLE MAGIC LINK CONFIRMATION ======
     // Process magic link, signup, or password recovery confirmations
@@ -493,7 +492,7 @@ async function handleEmailConfirmation() {
         console.log('[Auth] Processing authentication tokens from', tokenSource);
         
         // ====== DETECT CROSS-CONTEXT AUTH ======
-        // If tokens are in browser but we're in PWA, user clicked link in Safari
+        // If tokens are in browser but we're not in PWA, user clicked link in browser
         if (!isPWA && tokenSource === 'hash') {
           // User is in browser - set hint for PWA context
           sessionStorage.setItem('browser_session_hint', 'true');
@@ -534,14 +533,14 @@ async function handleEmailConfirmation() {
           
           // ====== STORE AUTH TIMESTAMP FOR SESSION RECOVERY ======
           // Store timestamp when auth happens in browser (helps PWA detect recent auth)
-          if (!isPWA && isIOSDevice) {
+          if (!isPWA) {
             localStorage.setItem('browser_auth_timestamp', Date.now().toString());
             console.log('[Auth] Browser auth timestamp stored for PWA recovery');
           }
           
           // ====== CONTEXT-AWARE MESSAGING ======
-          if (!isPWA && isIOSDevice) {
-            // User authenticated in Safari - guide them to return to PWA
+          if (!isPWA) {
+            // User authenticated in browser - guide them to return to PWA if they have it
             if (window.notyf) {
               setTimeout(() => {
                 window.notyf.open({
@@ -565,10 +564,10 @@ async function handleEmailConfirmation() {
         }
       } else {
         // ====== MISSING TOKENS ======
-        // Tokens might be in a different context (Safari vs PWA)
-        if (isPWA && isIOSDevice) {
-          console.log('[Auth] Magic link opened in PWA but tokens missing - likely opened in Safari first');
-          // Don't show error - user might have opened link in Safari and needs to return to PWA
+        // Tokens might be in a different context (browser vs PWA)
+        if (isPWA) {
+          console.log('[Auth] Magic link opened in PWA but tokens missing - likely opened in browser first');
+          // Don't show error - user might have opened link in browser and needs to return to PWA
         }
       }
     }
@@ -582,12 +581,11 @@ async function handleEmailConfirmation() {
 
 // ====== SESSION RECOVERY HELPER ======
 // Attempts to recover session from browser context for PWA users
-// This helps users who authenticated in Safari and then opened the PWA
+// This helps users who authenticated in browser and then opened the PWA
 async function attemptSessionRecovery() {
   const isPWA = isPWAStandalone();
-  const isIOSDevice = isIOS();
   
-  if (!isPWA || !isIOSDevice) return false;
+  if (!isPWA) return false;
   
   // Check if there's a recent authentication hint from browser
   const browserAuthTime = localStorage.getItem('browser_auth_timestamp');
@@ -626,12 +624,9 @@ async function checkAuthSession() {
 
   // ====== PWA CONTEXT DETECTION ======
   const isPWA = isPWAStandalone();
-  const isIOSDevice = isIOS();
   if (isPWA) {
     console.log('[Auth] Running in PWA standalone mode');
-    if (isIOSDevice) {
-      console.log('[Auth] iOS PWA detected - storage is isolated from browser');
-    }
+    console.log('[Auth] PWA storage is isolated from browser');
   }
 
   try {
@@ -661,8 +656,8 @@ async function checkAuthSession() {
     } else {
       // ====== NO VALID USER ======
       console.log('[Auth] No valid user found');
-      if (isPWA && isIOSDevice) {
-        console.log('[Auth] Note: iOS PWA has isolated storage. If you signed in via browser, you need to sign in again in the PWA.');
+      if (isPWA) {
+        console.log('[Auth] Note: PWA has isolated storage. If you signed in via browser, you need to sign in again in the PWA.');
         
         // ====== HELPFUL MESSAGE FOR PWA USERS ======
         // Check if user might have just installed PWA from browser
@@ -672,7 +667,7 @@ async function checkAuthSession() {
           setTimeout(() => {
             notyf.open({
               type: "info",
-              message: "ℹ️ iOS PWA Note: Please sign in again using the code from your email. Your session is separate from Safari.",
+              message: "ℹ️ PWA Note: Please sign in again using the code from your email. Your session is separate from the browser.",
               border: "10px solid #ff6b35",
               duration: 8000,
             });
@@ -788,17 +783,16 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // ====== UPDATE PWA-SPECIFIC UI ======
-  // Shows OTP input and helper text for iOS PWA users
-  // This provides an alternative authentication method since magic links open in Safari
+  // Shows OTP input and helper text for ALL PWA users (any device)
+  // This provides an alternative authentication method for standalone PWA apps
   function updatePWAUI() {
     const isPWA = isPWAStandalone();
-    const isIOSDevice = isIOS();
     
-    if (isPWA && isIOSDevice) {
-      // Show OTP row and help text for iOS PWA users
+    if (isPWA) {
+      // Show OTP row and help text for ALL PWA users (iOS, Android, Windows, etc.)
       if (otpRow) otpRow.style.display = 'flex';
       if (pwaHelpText) pwaHelpText.style.display = 'block';
-      console.log('[PWA] iOS PWA detected - showing OTP input');
+      console.log('[PWA] PWA mode detected - showing OTP input');
     } else {
       // Hide OTP row for browser users (they can click magic links normally)
       if (otpRow) otpRow.style.display = 'none';
@@ -811,10 +805,9 @@ document.addEventListener('DOMContentLoaded', function() {
   updatePWAUI();
 
   // ====== PWA WELCOME MESSAGE ======
-  // Show helpful welcome message for iOS PWA users on first launch
+  // Show helpful welcome message for ALL PWA users on first launch
   const isPWA = isPWAStandalone();
-  const isIOSDevice = isIOS();
-  if (isPWA && isIOSDevice) {
+  if (isPWA) {
     const pwaWelcomeShown = localStorage.getItem('pwa_welcome_shown');
     if (!pwaWelcomeShown) {
       setTimeout(() => {
@@ -900,8 +893,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // ====== SHOW SUCCESS MESSAGE ======
         const isPWA = isPWAStandalone();
-        const isIOSDevice = isIOS();
-        if (isPWA && isIOSDevice) {
+        if (isPWA) {
           notyf.success('✅ Signed in successfully! Starting game...');
         }
         
@@ -1155,18 +1147,17 @@ document.addEventListener('DOMContentLoaded', function() {
         notyf.error(`Error: ${error.message}`);
       } else {
         const isPWA = isPWAStandalone();
-        const isIOSDevice = isIOS();
         
         // Store email for OTP verification
         userEmailForOTP = email;
         
-        if (isPWA && isIOSDevice) {
-          // ====== iOS PWA SPECIFIC MESSAGE ======
-          // On iOS PWAs, show instructions for using OTP code instead of magic link
-          // This avoids the issue of magic links opening in Safari
+        if (isPWA) {
+          // ====== PWA SPECIFIC MESSAGE ======
+          // For PWAs, show instructions for using OTP code instead of magic link
+          // This provides a seamless authentication experience within the PWA
           notyf.open({
             type: "info",
-            message: "📩 Email sent! Enter the 6-digit code from your email below (or click the link in Safari and return here).",
+            message: "📩 Email sent! Enter the 6-digit code from your email below (or click the link if it opens in the app).",
             border: "10px solid #ff6b35",
             duration: 8000,
           });
@@ -1444,10 +1435,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // Detect if app is running in standalone mode (installed as PWA)
   if (isPWAStandalone()) {
     console.log('[PWA] Running in standalone mode');
-    if (isIOS()) {
-      console.log('[PWA] iOS PWA detected - authentication state is isolated from browser');
-      console.log('[PWA] Users need to authenticate within the PWA context');
-    }
+    console.log('[PWA] PWA detected - authentication state is isolated from browser');
+    console.log('[PWA] Users can authenticate within the PWA using OTP codes');
   }
 
   // ====== SERVICE WORKER UPDATE HANDLING ======
