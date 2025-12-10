@@ -665,10 +665,7 @@ async function checkAuthSession() {
 
       if (data.tokens < 1) {
         console.log('[Auth] Insufficient tokens to start game');
-        window.GAME_AUTH_MODE = 'guest';
-        if (window.notyf) {
-          window.notyf.error('Due to insufficient tokens, you have been switched to guest mode');
-        }
+        window.GAME_AUTH_MODE = "guest";
         return false;
       } else {
         window.GAME_AUTH_MODE = 'email';
@@ -700,7 +697,7 @@ async function checkAuthSession() {
           await attemptSessionRecovery();
         }
       }
-      window.GAME_AUTH_MODE = 'guest';
+      window.GAME_AUTH_MODE = "guest";
       return false;
     }
   } catch (error) {
