@@ -651,8 +651,29 @@ async function checkAuthSession() {
       if (isPWA) {
         console.log('[Auth] Session persisted in PWA context');
       }
-      window.GAME_AUTH_MODE = 'email';
-      return true;
+
+      const {data, error} = await supabaseClient
+        .from('wallets')
+        .select('tokens')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[Auth] Error fetching tokens:', error);
+        return false;
+      }
+
+      if (data.tokens < 1) {
+        console.log('[Auth] Insufficient tokens to start game');
+        window.GAME_AUTH_MODE = 'guest';
+        if (window.notyf) {
+          window.notyf.error('Due to insufficient tokens, you have been switched to guest mode');
+        }
+        return false;
+      } else {
+        window.GAME_AUTH_MODE = 'email';
+        return true;
+      }
     } else {
       // ====== NO VALID USER ======
       console.log('[Auth] No valid user found');
