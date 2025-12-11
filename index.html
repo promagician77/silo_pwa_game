@@ -192,13 +192,35 @@
         };
       }
 
-      // ====== CANVAS RESIZE CALLBACK ======
-      // This function is called by the Defold engine when the window is resized
-      // It ensures the game canvas maintains proper aspect ratio and fits the viewport
+      // ====== CUSTOM PARAMETERS ======
+      // Configuration object for the Defold engine
       if (typeof CUSTOM_PARAMETERS === 'undefined') {
         var CUSTOM_PARAMETERS = {};
       }
 
+      // ====== ENGINE START SUCCESS CALLBACK ======
+      // Called when the game engine finishes loading and is ready to run
+      // This is the perfect time to ensure canvas sizing is correct
+      CUSTOM_PARAMETERS.start_success = function() {
+        console.log('[Engine] Game engine loaded successfully');
+        // Set flag to track engine load state
+        window.GAME_ENGINE_LOADED = true;
+        window.GAME_ENGINE_LOADING = false;
+        
+        // ====== FIX CANVAS SIZE AFTER ENGINE LOADS ======
+        // The engine may have reset canvas dimensions during initialization
+        // Force a recalculation to ensure proper scaling on first load
+        if (window.forceCanvasSizeRecalculation) {
+          // Use setTimeout to ensure engine is fully settled
+          setTimeout(function() {
+            window.forceCanvasSizeRecalculation();
+          }, 100);
+        }
+      };
+
+      // ====== CANVAS RESIZE CALLBACK ======
+      // This function is called by the Defold engine when the window is resized
+      // It ensures the game canvas maintains proper aspect ratio and fits the viewport
       CUSTOM_PARAMETERS.resize_window_callback = function() {
         // ====== iOS DETECTION ======
         // Detect iOS devices for special handling
