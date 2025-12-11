@@ -162,8 +162,8 @@ body {
 
 #play-section {
   flex-shrink: 0;
-  width: 450px;
-  max-width: 90vw;
+  width: 100%;
+  max-width: min(450px, 90vw);
 }
 
 .play-button-container {
@@ -252,8 +252,8 @@ body {
   border: 3px solid #ff6b35;
   border-radius: 16px;
   padding: 32px;
-  width: 450px;
-  max-width: 90vw;
+  width: 100%;
+  max-width: min(450px, 90vw);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7),
     0 0 20px rgba(255, 107, 53, 0.2);
 }
@@ -874,40 +874,112 @@ button,
 /* ====== MOBILE RESPONSIVE STYLES ====== */
 /* Reduce sign-in box size on mobile devices */
 @media (max-width: 768px) {
+  #play-section {
+    max-width: min(400px, 92vw);
+  }
+  
+  .play-button-container {
+    padding: 24px;
+    gap: 16px;
+  }
+  
   .panel {
-    padding: 16px 20px;
-    width: 380px;
+    padding: 18px;
+    max-width: min(400px, 92vw);
   }
   
   .panel h1 {
+    font-size: 26px;
     margin: 0 0 12px 0;
-    font-size: 28px;
   }
   
   .panel p {
-    margin: 0 0 16px 0;
     font-size: 14px;
+    margin: 0 0 16px 0;
   }
   
   button {
-    padding: 10px 16px;
+    padding: 11px 14px;
     font-size: 14px;
-    min-height: 40px;
+    min-height: 42px;
   }
   
   input {
-    padding: 10px 14px;
+    padding: 10px 12px;
     font-size: 14px;
-    min-height: 40px;
+    min-height: 42px;
   }
   
   #otp-code {
-    font-size: 18px;
-    letter-spacing: 3px;
+    font-size: 17px;
+    letter-spacing: 2px;
+    padding: 10px 8px;
   }
   
   .help-text {
     font-size: 12px;
+    padding: 10px;
+    margin-top: 10px;
+  }
+  
+  .row {
+    gap: 10px;
+    margin-top: 12px;
+  }
+}
+
+/* Extra small mobile devices (phones in landscape) */
+@media (max-width: 480px) {
+  #play-section {
+    max-width: min(340px, 94vw);
+  }
+  
+  .play-button-container {
+    padding: 20px;
+    gap: 14px;
+    border-width: 2px;
+  }
+  
+  #play-btn {
+    padding: 16px 40px;
+  }
+  
+  .panel {
+    padding: 14px;
+    max-width: min(340px, 94vw);
+    border-width: 2px;
+  }
+  
+  .panel h1 {
+    font-size: 22px;
+    margin: 0 0 10px 0;
+  }
+  
+  .panel p {
+    font-size: 13px;
+    margin: 0 0 14px 0;
+  }
+  
+  button {
+    padding: 10px 12px;
+    font-size: 13px;
+    min-height: 40px;
+  }
+  
+  input {
+    padding: 9px 10px;
+    font-size: 13px;
+    min-height: 40px;
+  }
+  
+  #otp-code {
+    font-size: 16px;
+    letter-spacing: 1.5px;
+    padding: 9px 6px;
+  }
+  
+  .help-text {
+    font-size: 11px;
     padding: 8px;
     margin-top: 8px;
   }
@@ -918,50 +990,77 @@ button,
   }
 }
 
-/* Extra small mobile devices */
-@media (max-width: 480px) {
+/* Very small mobile devices (small phones) */
+@media (max-width: 380px) {
+  #play-section {
+    max-width: 96vw;
+  }
+  
+  .play-button-container {
+    padding: 16px;
+    gap: 12px;
+    border-width: 2px;
+    border-radius: 12px;
+  }
+  
+  #play-btn {
+    padding: 14px 35px;
+  }
+  
+  .play-hint {
+    font-size: 14px;
+  }
+  
   .panel {
-    padding: 14px 16px;
-    width: 320px;
-    max-width: 85vw;
+    padding: 12px;
+    max-width: 96vw;
+    border-width: 2px;
+    border-radius: 12px;
   }
   
   .panel h1 {
-    margin: 0 0 10px 0;
-    font-size: 26px;
+    font-size: 20px;
+    margin: 0 0 8px 0;
   }
   
   .panel p {
+    font-size: 12px;
     margin: 0 0 12px 0;
-    font-size: 13px;
   }
   
   button {
-    padding: 9px 14px;
-    font-size: 13px;
+    padding: 9px 10px;
+    font-size: 12px;
     min-height: 38px;
   }
   
   input {
-    padding: 8px 12px;
-    font-size: 13px;
+    padding: 8px 10px;
+    font-size: 12px;
     min-height: 38px;
   }
   
   #otp-code {
-    font-size: 16px;
-    letter-spacing: 2px;
+    font-size: 15px;
+    letter-spacing: 1px;
+    padding: 8px 6px;
   }
   
   .help-text {
-    font-size: 11px;
-    padding: 6px;
+    font-size: 10px;
+    padding: 7px;
     margin-top: 6px;
   }
   
   .row {
-    gap: 6px;
+    gap: 7px;
     margin-top: 8px;
+  }
+  
+  #player-score {
+    padding: 12px;
+    font-size: 16px;
+    margin-top: 12px;
   }
 }
 
