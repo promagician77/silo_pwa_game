@@ -871,6 +871,80 @@ button,
   color: #ddd;
 }
 
+/* ====== MOBILE RESPONSIVE STYLES ====== */
+/* Reduce sign-in box size on mobile devices */
+@media (max-width: 768px) {
+  .panel {
+    padding: 20px;
+    width: 380px;
+  }
+  
+  button {
+    padding: 12px 16px;
+    font-size: 14px;
+    min-height: 40px;
+  }
+  
+  input {
+    padding: 10px 14px;
+    font-size: 14px;
+    min-height: 40px;
+  }
+  
+  #otp-code {
+    font-size: 18px;
+    letter-spacing: 3px;
+  }
+  
+  .help-text {
+    font-size: 12px;
+    padding: 10px;
+    margin-top: 10px;
+  }
+  
+  .row {
+    gap: 10px;
+    margin-top: 12px;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .panel {
+    padding: 16px;
+    width: 320px;
+    max-width: 85vw;
+  }
+  
+  button {
+    padding: 10px 14px;
+    font-size: 13px;
+    min-height: 38px;
+  }
+  
+  input {
+    padding: 8px 12px;
+    font-size: 13px;
+    min-height: 38px;
+  }
+  
+  #otp-code {
+    font-size: 16px;
+    letter-spacing: 2px;
+  }
+  
+  .help-text {
+    font-size: 11px;
+    padding: 8px;
+    margin-top: 8px;
+  }
+  
+  .row {
+    gap: 8px;
+    margin-top: 10px;
+  }
+}
+
 /* Hide main content when in portrait mode */
 @media (orientation: portrait) {
   #app-container,
