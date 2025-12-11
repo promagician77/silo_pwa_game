@@ -875,12 +875,22 @@ button,
 /* Reduce sign-in box size on mobile devices */
 @media (max-width: 768px) {
   .panel {
-    padding: 20px;
+    padding: 16px 20px;
     width: 380px;
   }
   
+  .panel h1 {
+    margin: 0 0 12px 0;
+    font-size: 28px;
+  }
+  
+  .panel p {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+  }
+  
   button {
-    padding: 12px 16px;
+    padding: 10px 16px;
     font-size: 14px;
     min-height: 40px;
   }
@@ -898,26 +908,36 @@ button,
   
   .help-text {
     font-size: 12px;
-    padding: 10px;
-    margin-top: 10px;
+    padding: 8px;
+    margin-top: 8px;
   }
   
   .row {
-    gap: 10px;
-    margin-top: 12px;
+    gap: 8px;
+    margin-top: 10px;
   }
 }
 
 /* Extra small mobile devices */
 @media (max-width: 480px) {
   .panel {
-    padding: 16px;
+    padding: 14px 16px;
     width: 320px;
     max-width: 85vw;
   }
   
+  .panel h1 {
+    margin: 0 0 10px 0;
+    font-size: 26px;
+  }
+  
+  .panel p {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+  }
+  
   button {
-    padding: 10px 14px;
+    padding: 9px 14px;
     font-size: 13px;
     min-height: 38px;
   }
@@ -935,13 +955,13 @@ button,
   
   .help-text {
     font-size: 11px;
-    padding: 8px;
-    margin-top: 8px;
+    padding: 6px;
+    margin-top: 6px;
   }
   
   .row {
-    gap: 8px;
-    margin-top: 10px;
+    gap: 6px;
+    margin-top: 8px;
   }
 }
 
