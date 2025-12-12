@@ -248,6 +248,10 @@ body {
 
 #signin-section {
   flex-shrink: 0;
+  width: 100%;
+  max-width: min(450px, 90vw);
+  display: flex;
+  flex-direction: column;
 }
 
 .panel {
@@ -257,7 +261,6 @@ body {
   border-radius: 16px;
   padding: 32px;
   width: 100%;
-  max-width: min(450px, 90vw);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7),
     0 0 20px rgba(255, 107, 53, 0.2);
 }
@@ -907,6 +910,10 @@ button,
     max-width: min(400px, 92vw);
   }
   
+  #signin-section {
+    max-width: min(400px, 92vw);
+  }
+  
   .play-button-container {
     padding: 24px;
     gap: 16px;
@@ -914,7 +921,6 @@ button,
   
   .panel {
     padding: 16px;
-    max-width: min(400px, 92vw);
     /* Optimize for scrolling when content is tall (OTP mode) */
     max-height: 85vh;
     overflow-y: auto;
@@ -969,6 +975,10 @@ button,
     max-width: min(360px, 95vw);
   }
   
+  #signin-section {
+    max-width: min(360px, 95vw);
+  }
+  
   .play-button-container {
     padding: 18px;
     gap: 12px;
@@ -981,7 +991,6 @@ button,
   
   .panel {
     padding: 12px;
-    max-width: min(360px, 95vw);
     border-width: 2px;
     max-height: 82vh;
     overflow-y: auto;
@@ -1036,6 +1045,10 @@ button,
     max-width: 96vw;
   }
   
+  #signin-section {
+    max-width: 96vw;
+  }
+  
   .play-button-container {
     padding: 14px;
     gap: 10px;
@@ -1053,7 +1066,6 @@ button,
   
   .panel {
     padding: 10px;
-    max-width: 96vw;
     border-width: 2px;
     border-radius: 12px;
     max-height: 80vh;
@@ -1136,6 +1148,10 @@ button,
     padding: 10px 8px;
     gap: 10px;
     max-height: 96vh;
+  }
+  
+  #signin-section {
+    max-width: min(380px, 94vw);
   }
   
   .panel {
