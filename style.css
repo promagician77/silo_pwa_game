@@ -75,6 +75,11 @@ body {
   background: transparent;
   transition: opacity 0.5s ease-out;
   -webkit-transition: opacity 0.5s ease-out;
+  /* Responsive viewport sizing like canvas */
+  width: 100%;
+  height: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
   /* Safari rendering optimization */
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
@@ -90,51 +95,70 @@ body {
   pointer-events: auto;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  max-width: 1400px;
-  padding: 40px 20px;
-  gap: 40px;
-  margin-top: 18vh;
-  margin-left: 12vw;
+  max-width: 100vw;
+  height: auto;
+  max-height: 100vh;
+  padding: clamp(20px, 3vh, 40px) clamp(20px, 3vw, 40px);
+  gap: clamp(20px, 3vw, 40px);
+  margin: 0;
   /* Safari flexbox fixes */
   -webkit-box-orient: horizontal;
   -webkit-box-direction: normal;
   -webkit-flex-direction: row;
+  -webkit-box-align: center;
+  -webkit-box-pack: center;
   /* Safari viewport unit fixes */
   min-height: 0;
   /* Safari rendering optimization */
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-}
-
-@media (min-width: 1400px) {
-  .landing-content {
-    margin-left: 15vw;
-  }
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 @media (max-width: 900px) {
   .landing-content {
     flex-direction: column;
     align-items: center;
-    margin-top: 10vh;
-    margin-left: 0;
-    padding: 20px;
-    gap: 20px;
+    justify-content: center;
+    padding: clamp(15px, 2vh, 20px);
+    gap: clamp(15px, 2vh, 20px);
+    width: 100vw;
+    height: 100vh;
     /* Safari flexbox fixes */
     -webkit-box-orient: vertical;
     -webkit-box-direction: normal;
     -webkit-flex-direction: column;
+    -webkit-box-align: center;
+    -webkit-box-pack: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-content {
+    max-width: 100vw;
+    max-height: 100vh;
+    width: 100vw;
+    height: 100vh;
+    padding: 15px;
   }
 }
 
 /* Safari-specific media query for iOS devices */
 @supports (-webkit-touch-callout: none) {
   .landing-content {
-    /* iOS Safari viewport fixes */
-    margin-top: max(10vh, 40px);
+    /* iOS Safari viewport height fix */
+    height: -webkit-fill-available;
+    min-height: -webkit-fill-available;
+    max-height: -webkit-fill-available;
+  }
+  
+  .overlay {
+    height: -webkit-fill-available;
+    min-height: -webkit-fill-available;
   }
 }
 
@@ -161,9 +185,10 @@ body {
 }
 
 #play-section {
-  flex-shrink: 0;
-  width: 450px;
+  flex-shrink: 1;
+  width: clamp(300px, 40vw, 450px);
   max-width: 90vw;
+  min-width: 280px;
 }
 
 .play-button-container {
@@ -243,7 +268,10 @@ body {
 }
 
 #signin-section {
-  flex-shrink: 0;
+  flex-shrink: 1;
+  width: 100%;
+  max-width: 450px;
+  min-width: 280px;
 }
 
 .panel {
@@ -251,38 +279,18 @@ body {
   background: rgba(20, 20, 20, 0.92);
   border: 3px solid #ff6b35;
   border-radius: 16px;
-  padding: 32px;
-  width: 450px;
+  padding: clamp(20px, 4vw, 32px);
+  width: 100%;
   max-width: 90vw;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7),
     0 0 20px rgba(255, 107, 53, 0.2);
-}
-
-/* Responsive adjustments for mobile devices */
-@media (max-width: 600px) {
-  .panel {
-    width: 100%;
-    max-width: 95vw;
-    padding: 20px 16px;
-    border-width: 2px;
-    border-radius: 12px;
-  }
-  
-  .panel h1 {
-    font-size: 24px;
-    margin-bottom: 12px;
-  }
-  
-  .panel p {
-    font-size: 14px;
-    margin-bottom: 16px;
-  }
-}
-
-@media (max-width: 400px) {
-  .panel {
-    padding: 16px 12px;
-  }
+  /* Responsive sizing like canvas */
+  box-sizing: border-box;
+  /* Safari rendering optimization */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .panel h1 {
@@ -333,14 +341,6 @@ button {
   backface-visibility: hidden;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
-}
-
-/* Responsive button adjustments for mobile */
-@media (max-width: 600px) {
-  button {
-    padding: 12px 16px;
-    font-size: 14px;
-  }
 }
 
 button:hover {
@@ -406,14 +406,6 @@ input {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Responsive input adjustments for mobile */
-@media (max-width: 600px) {
-  input {
-    padding: 10px 12px;
-    font-size: 14px;
-  }
-}
-
 input:focus {
   outline: none;
   border-color: #ff6b35;
@@ -453,27 +445,11 @@ input:-ms-input-placeholder {
   text-align: center;
 }
 
-/* Responsive help text for mobile */
-@media (max-width: 600px) {
-  .help-text {
-    padding: 10px;
-    font-size: 12px;
-  }
-}
-
 #otp-code {
   text-align: center;
   letter-spacing: 4px;
   font-size: 20px;
   font-weight: bold;
-}
-
-/* Responsive OTP code input for mobile */
-@media (max-width: 600px) {
-  #otp-code {
-    font-size: 18px;
-    letter-spacing: 3px;
-  }
 }
 
 #player-score {
@@ -812,16 +788,73 @@ textarea {
   background: transparent;
 }
 
+/* Responsive sizing for panels and sections (like canvas) */
+@media (max-width: 768px) {
+  #play-section,
+  #signin-section {
+    width: 100%;
+    max-width: 100vw;
+    min-width: auto;
+  }
+  
+  .panel {
+    max-width: 100vw;
+    width: 100%;
+    padding: 20px;
+  }
+  
+  .play-button-container {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .panel {
+    padding: 15px;
+    border-radius: 12px;
+  }
+  
+  .play-button-container {
+    padding: 16px;
+    border-radius: 12px;
+  }
+}
+
 /* Safari safe area insets for notched devices */
 @supports (padding: max(0px)) {
   .landing-content {
     padding-left: max(20px, env(safe-area-inset-left));
     padding-right: max(20px, env(safe-area-inset-right));
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
   }
   
   .panel {
-    padding-left: max(32px, env(safe-area-inset-left));
-    padding-right: max(32px, env(safe-area-inset-right));
+    padding-left: max(clamp(20px, 4vw, 32px), env(safe-area-inset-left));
+    padding-right: max(clamp(20px, 4vw, 32px), env(safe-area-inset-right));
+  }
+}
+
+/* Landscape orientation handling for overlay (like canvas) */
+@media (orientation: landscape) and (max-height: 500px) {
+  .landing-content {
+    max-height: 100vh;
+    height: 100vh;
+    padding: 10px 20px;
+  }
+  
+  .panel {
+    padding: 15px 20px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  #play-section {
+    max-height: 90vh;
+  }
+  
+  .play-button-container {
+    padding: 20px;
   }
 }
 
@@ -840,6 +873,16 @@ textarea {
 #play-btn,
 button,
 .loading-spinner {
+  will-change: transform;
+  -webkit-will-change: transform;
+}
+
+/* Safari GPU acceleration hints for responsive elements */
+.overlay,
+.landing-content,
+.panel,
+#play-section,
+#signin-section {
   will-change: transform;
   -webkit-will-change: transform;
 }
