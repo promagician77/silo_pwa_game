@@ -1203,6 +1203,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // The redirect URL will work, but we'll handle both hash and query params in handleEmailConfirmation
       }
       
+      // ====== SEND OTP EMAIL ======
+      // NOTE: OTP code expiration time is controlled in Supabase Dashboard:
+      // Go to: Authentication > Email Templates > "Magic Link"
+      // The default is 60 seconds, but can be increased for slower email delivery
+      // Recommended: 300 seconds (5 minutes) or 600 seconds (10 minutes)
       const { error } = await supabaseClient.auth.signInWithOtp({
         email,
         options: { 
